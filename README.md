@@ -23,7 +23,7 @@ We develop buoys which collect information about the current water conditions su
 or the project we will be demonstrating the solution with two buoys. 
  
 
-**Sensors/Actuators/Hardware Used: ** 
+**Sensors/Actuators/Hardware Used**: 
 
 Sensors/devices used per buoy:
 
@@ -40,7 +40,7 @@ Physical items:
 - A large tub to hold water for simulation purposes. 
 - Waterproof container for buoy 
 
-Machine Learning Models: 
+**Machine Learning Models**: 
 - Classifier for defining underwater visibility based on light intensity 
 - Classifier for defining water turbulence based on accelerometer data 
 - Classifier to predict future visibility underwater using all data provided by the Buoy. 
