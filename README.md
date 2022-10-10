@@ -20,7 +20,9 @@ Weather forecasts are generally used to predict weather conditions for a wide ra
 
 We develop buoys which collect information about the current water conditions such as water turbulence (waves), water visibility and water temperature. A single buoy can be generalized to multiple buoys to scale. Each buoy may intermittently communicate with neighboring buoys to wake up sleeping buoys for better energy management when it detects some change of interest (certain threshold).
 
-or the project we will be demonstrating the solution with two buoys. 
+![](/report/resources/iot1.jpeg)
+
+For the project we will be demonstrating the solution with two buoys. 
  
 
 **Sensors/Actuators/Hardware Used**: 
@@ -46,6 +48,8 @@ Physical items:
 - Classifier to predict future visibility underwater using all data provided by the Buoy. 
 
 **System Architecture**: 
+
+![](/report/resources/iot2.png)
 
 Phone app combined with WeMOS controller and sensors that collects data and sends it to the cloud. 
 
