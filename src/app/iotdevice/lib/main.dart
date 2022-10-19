@@ -2,45 +2,66 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:torch_light/torch_light.dart';
 import 'package:wakelock/wakelock.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  // can be called before `runApp()`
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Obtain a list of the available cameras on the device.
+  final cameras = await availableCameras();
+
+  // Get a specific camera from the list of available cameras.
+  final firstCamera = cameras.first;
+
+  runApp(MyApp(
+    camera: firstCamera,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+
+  const MyApp({Key? key, required this.camera,}) : super(key: key);
+  final CameraDescription camera;
 
   // This widget is the root of your application.
- 
+  
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'IoT Checkin 2 Demo'),
+      theme: ThemeData.dark(),
+      home: MyHomePage(
+          title: 'IoT Checkin 2 Demo',
+          camera: camera
+        ),
+     
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({Key? key, required this.title, required this.camera}) : super(key: key);
 
   final String title;
+  final CameraDescription camera;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
+  // Camera Setup
+  late CameraController _controller;
+  late Future<void> _initializeControllerFuture;
 
   // MQTT Setup
   static String mqttAddress   = '104.248.98.70';        // IP of the Mqtt Server
@@ -177,8 +198,16 @@ class _MyHomePageState extends State<MyHomePage> {
         },
       ),
     );
-    
-    
+
+    // Create Camera Controller
+    _controller = CameraController(
+      // Get a specific camera from the list of available cameras.
+      widget.camera,
+      // Define the resolution to use.
+      ResolutionPreset.medium,
+    );
+    // Next, initialize the controller. This returns a Future.
+    _initializeControllerFuture = _controller.initialize();
   }
   
   @override
@@ -188,9 +217,37 @@ class _MyHomePageState extends State<MyHomePage> {
     for (final subscription in _streamSubscriptions) {
       subscription.cancel();
     }
+
+    _controller.dispose();
   }
   
 
+  Future<void> turnOnTorch() async {
+    await _controller.setFlashMode(FlashMode.torch);
+  }
+
+  Future<void> turnoffTorch() async {
+    await _controller.setFlashMode(FlashMode.off);
+  }
+
+
+  // Take picture with flash on 
+  Future<XFile?> takePicture() async {
+
+    // turn flash on
+    _controller.setFlashMode(FlashMode.always);
+
+    if (_controller.value.isTakingPicture) {
+      return null;
+    }
+
+    try {
+      XFile file = await _controller.takePicture();
+      return file;
+    } catch (e) {
+      return null;
+    }
+  }
   @override
   Widget build(BuildContext context) {
 
@@ -255,6 +312,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container()),
                 (!running) ? TextButton(
                   onPressed: () async {
+
+                    try {
+                      await turnOnTorch();
+                    } catch (e) {
+                      if (kDebugMode) print(e);
+                    }
+
                     // Create Server
                     try{
                       server = await ServerSocket.bind(socketAddress, socketPort);
@@ -306,6 +370,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                   child: const Text("Press to start")
                 ) : TextButton(onPressed: () async {
+
+                  try {
+                    await turnoffTorch();
+                  } catch (e) {
+                    if (kDebugMode) print(e);
+                  }
+
                   try{
                     await server.close();
                     statusMessageSocket = "Not Started";
@@ -319,6 +390,30 @@ class _MyHomePageState extends State<MyHomePage> {
                   Wakelock.disable();
                   statusMessageMqtt = "Not Started";
                 }, child: const Text("Press to Stop")),
+                Expanded(child: Container()),
+              ],
+            ),
+            const SizedBox(height: 20,),
+            Row(
+              children: [
+                Expanded(child: Container()),
+                // View of the camera
+                SizedBox(
+                  height: 100,
+                  width: 100,
+                  child: FutureBuilder<void>(
+                    future: _initializeControllerFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        // If the Future is complete, display the preview.
+                        return CameraPreview(_controller);
+                      } else {
+                        // Otherwise, display a loading indicator.
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                    },
+                  ),
+                ),
                 Expanded(child: Container())
               ],
             )
