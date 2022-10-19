@@ -23,15 +23,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
+        
         primarySwatch: Colors.blue,
       ),
       home: const MyHomePage(title: 'IoT Checkin 2 Demo'),
@@ -41,15 +33,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   final String title;
 
@@ -65,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   static String usr           = "cs3237";               // 
   static String pwd           = "thisisag00dp4ssw0rd";  // 
   static int sendThreshold    = 10;                     // always sending #sendThreshold data collection to the mqtt server (might safe power)
-  static String topic         = 'topic/test';           // Topic to send the data to
+  static String topic         = 'test/abc';             // Topic to send the data to
   String statusMessageMqtt    = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // Socket Setup
@@ -152,7 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
         String data2SendStr = data2Send.toString();
         builder.addString(data2SendStr);
         toSend.removeRange(0, 10);
-        mqttclient.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!);
+        mqttclient.publishMessage(topic, MqttQos.exactlyOnce, builder.payload!);
       }
     },
 
@@ -323,11 +306,17 @@ class _MyHomePageState extends State<MyHomePage> {
                   },
                   child: const Text("Press to start")
                 ) : TextButton(onPressed: () async {
-                  await server.close();
-                  statusMessageSocket = "Not Started";
+                  try{
+                    await server.close();
+                    statusMessageSocket = "Not Started";
+                  }catch (e){
+                    statusMessageSocket = e.toString();
+                  }
 
                   mqttclient.disconnect();
                   running = false;
+
+                  Wakelock.disable();
                   statusMessageMqtt = "Not Started";
                 }, child: const Text("Press to Stop")),
                 Expanded(child: Container())
