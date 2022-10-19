@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:wakelock/wakelock.dart';
 
 void main() {
   runApp(const MyApp());
@@ -33,7 +34,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'IoT Checkin 1 Demo'),
+      home: const MyHomePage(title: 'IoT Checkin 2 Demo'),
     );
   }
 }
@@ -59,14 +60,20 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
 
   // MQTT Setup
-  static String mqttAddress   = '192.168.43.239';  // IP of the Mqtt Server
-  static int mqttPort         = 1883;              // Port of the Mqtt Server
-  static int sendThreshold    = 10;                // always sending #sendThreshold data collection to the mqtt server (might safe power)
-  static String topic         = 'topic/test';      // Topic to send the data to
+  static String mqttAddress   = '104.248.98.70';        // IP of the Mqtt Server
+  static int mqttPort         = 1883;                   // Port of the Mqtt Server
+  static String usr           = "cs3237";               // 
+  static String pwd           = "thisisag00dp4ssw0rd";  // 
+  static int sendThreshold    = 10;                     // always sending #sendThreshold data collection to the mqtt server (might safe power)
+  static String topic         = 'topic/test';           // Topic to send the data to
+  String statusMessageMqtt    = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // Socket Setup
-  static String socketAddress = '192.168.43.1';    // IP of the local socket server (this is the default IP of mobile hotspots)
-  static int socketPort       = 4567;              // Port of the local socket server     
+  static String socketAddress = '192.168.43.1';         // IP of the local socket server (this is the default IP of mobile hotspots)
+  static int socketPort       = 4567;                   // Port of the local socket server     
+  bool running                = false;                  // Used to enable or disable button           
+  late ServerSocket server;                             // Server Object; late tells dart compiler that it will be initialised later 
+  String statusMessageSocket  = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // send buffer
   var toSend = [];
@@ -75,6 +82,30 @@ class _MyHomePageState extends State<MyHomePage> {
     if (kDebugMode) {
       print("Connected");
     }
+
+    setState(() {
+      statusMessageMqtt = "Running";
+    });
+  }
+
+  void disconnected() {
+    if (kDebugMode) {
+      print("Disconnected");
+    }
+
+    setState(() {
+      statusMessageMqtt = "Not Started";
+    });
+  }
+
+  void error() {
+    if (kDebugMode) {
+      print("Error Occured while connecting to Mqtt Server");
+    }
+
+    setState(() {
+      statusMessageMqtt = "Error";
+    });
   }
 
   MqttServerClient mqttclient =
@@ -91,7 +122,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
     // handle data from the client
     (Uint8List data) async {
-      await Future.delayed(Duration(seconds: 1));
       
       if (kDebugMode) {
         print(data);
@@ -176,6 +206,7 @@ class _MyHomePageState extends State<MyHomePage> {
       subscription.cancel();
     }
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -218,51 +249,93 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container())
               ],
             ),
+            const SizedBox(height: 20,),
+            Row(
+              children: [
+                Expanded(child: Container()),
+                Text("Status MQTT Client: $statusMessageMqtt"),
+                Expanded(child: Container())
+              ]
+            ,),
+            const SizedBox(height: 20,),
+            Row(
+              children: [
+                Expanded(child: Container()),
+                Text("Status Socket Client: $statusMessageSocket"),
+                Expanded(child: Container())
+              ]
+            ,),
+            const SizedBox(height: 20,),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Expanded(child: Container()),
+                (!running) ? TextButton(
+                  onPressed: () async {
+                    // Create Server
+                    try{
+                      server = await ServerSocket.bind(socketAddress, socketPort);
+                      server.listen((client) {
+                        handleConnection(client);
+                      });
+                      statusMessageSocket = "Running";
+                      if (kDebugMode) {
+                        print("binding done");
+                      }
+                    }catch (e) {
+                      statusMessageSocket = e.toString();
+                    }
+                    
+                    
+                    // Setup Mqtt Client
+                    mqttclient.onConnected = connected;
+                    mqttclient.onDisconnected = disconnected;
+                    mqttclient.autoReconnect = true;  // enabling auto reconnect 
+
+                    final connMessage = MqttConnectMessage()
+                      .authenticateAs(usr, pwd)
+                      .withWillTopic('willtopic')
+                      .withWillMessage('Will message')
+                      .startClean()
+                      .withWillQos(MqttQos.atLeastOnce);
+                    
+                    mqttclient.keepAlivePeriod = 60;
+                    
+                    mqttclient.connectionMessage = connMessage;
+
+                    try {
+                      await mqttclient.connect();
+                      if (kDebugMode) {
+                        print("Connected to Mqtt Server");
+                      }
+                    } catch (e) {
+                      if (kDebugMode) {
+                        print('Error Connecting');
+                      }
+                      error();
+                    }
+
+                    // Preventing the phone from falling asleep
+                    Wakelock.enable();
+                    setState(() {
+                      running = true;
+                    });
+                  },
+                  child: const Text("Press to start")
+                ) : TextButton(onPressed: () async {
+                  await server.close();
+                  statusMessageSocket = "Not Started";
+
+                  mqttclient.disconnect();
+                  running = false;
+                  statusMessageMqtt = "Not Started";
+                }, child: const Text("Press to Stop")),
+                Expanded(child: Container())
+              ],
+            )
           ],
         ),
       ),
-      // Pressing this button starts the socket and Mqtt Client
-      floatingActionButton: FloatingActionButton(onPressed: (() async{
-        // Create Server
-        final server = await ServerSocket.bind(socketAddress, socketPort);
-
-        server.listen((client) {
-          handleConnection(client);
-        });
-
-        if (kDebugMode) {
-          print("binding done");
-        }
-        
-        // Setup Mqtt Client
-        mqttclient.onConnected = connected;
-
-        final connMessage = MqttConnectMessage()
-          .authenticateAs('username', 'password')
-          .withWillTopic('willtopic')
-          .withWillMessage('Will message')
-          .startClean()
-          .withWillQos(MqttQos.atLeastOnce);
-        
-        mqttclient.keepAlivePeriod = 60;
-        
-        mqttclient.connectionMessage = connMessage;
-
-        try {
-          await mqttclient.connect();
-          if (kDebugMode) {
-            print("Connected to Mqtt Server");
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error Connecting');
-          }
-
-        }
-        
-      }),
-      tooltip: "Start Socket Server",
-      child: const Icon(Icons.start),),
     );
   }
 }

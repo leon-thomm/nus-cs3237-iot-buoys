@@ -37,6 +37,7 @@ dependencies:
   network_info_plus: ^2.1.4+1
   mqtt_client: ^9.6.8
   sensors_plus: ^1.4.1
+  wakelock: ^0.6.2
 
 dev_dependencies:
   flutter_test:
