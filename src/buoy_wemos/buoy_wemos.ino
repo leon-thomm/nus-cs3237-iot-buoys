@@ -1,41 +1,72 @@
-#include "mpu/mpu.h"
+#include "i2c/i2c.h"
+#include "adc/adc.h"
+#include "photores/photores.h"
+#include "temperature/temperature.h"
+// #include "mpu/mpu.h"
 
-void setup() {
-	Serial.begin(9600);
-	Wire.begin();
-	delay(2000);
+int adc_address;
 
-	initialize_mpu();
-	Serial.println("done.");
-	delay(2000);
+
+void setup()
+{
+    Wire.begin();
+    Serial.begin(9600);
+
+    // scan
+    Serial.println("scanning for I2C devices...");
+    int* dev = i2c::scan(false);
+    Serial.println("done");
+
+    Serial.println("found the following devices:");
+    for(int i=0; i<dev[0]; i++) {
+        Serial.print("device ");
+        Serial.print(i+1);
+        Serial.print(" at address ");
+        Serial.print(dev[i+1]);
+        Serial.println();
+    }
+
+    // TODO: how to ensure the ADC's address is the first when using multiple I2C devices?
+    adc_address = dev[1];
+
+    // initialize sensor interfaces
+    adc::init(adc_address);
+    photores::init(0);
+    // temperature::init(1);
+    // mpu::init();
 }
 
-void loop() {
-  xyzFloat gValue = mpu.getGValues();
-  xyzFloat gyr = mpu.getGyrValues();
-  float temp = mpu.getTemperature();
-  float resultantG = mpu.getResultantG(gValue);
+void loop()
+{
+    // read ADC channel 0 (photo resistor)
+    Serial.print("photores:\t\t");
+    Serial.println(photores::read());
+    // Serial.print("temperature:\t\t");
+    // Serial.println(temperature::read());
+    delay(1000);
 
-  Serial.print("acc [g] x,y,z,g:\t\t");
-  Serial.print(gValue.x);
-  Serial.print("\t\t");
-  Serial.print(gValue.y);
-  Serial.print("\t\t");
-  Serial.print(gValue.z);
-  Serial.print("\t\t");
-  Serial.println(resultantG);
+    /*  mpu
 
-  Serial.print("gyro [deg/s] x,y,z:\t\t");
-  Serial.print(gyr.x);
-  Serial.print("\t\t");
-  Serial.print(gyr.y);
-  Serial.print("\t\t");
-  Serial.println(gyr.z);
+    xyzFloat gValue = mpu.getGValues();
+    xyzFloat gyr = mpu.getGyrValues();
+    float temp = mpu.getTemperature();
+    float resultantG = mpu.getResultantG(gValue);
 
-  Serial.print("Temperature [°C]: ");
-  Serial.println(temp);
+    Serial.print("acc [g] x,y,z,g:\t\t");
+    Serial.print(gValue.x);
+    Serial.print("\t\t");
+    Serial.print(gValue.y);
+    Serial.print("\t\t");
+    Serial.print(gValue.z);
+    Serial.print("\t\t");
+    Serial.println(resultantG);
 
-  Serial.println("********************************************");
+    Serial.print("gyro [deg/s] x,y,z:\t\t");
+    Serial.print(gyr.x);
+    Serial.print("\t\t");
+    Serial.print(gyr.y);
+    Serial.print("\t\t");
+    Serial.println(gyr.z);
 
-  delay(1000);
+    */
 }
