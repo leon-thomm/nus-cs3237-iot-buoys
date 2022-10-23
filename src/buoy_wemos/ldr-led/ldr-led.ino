@@ -18,9 +18,11 @@ void loop() {
 
 
   if (sensorValue == 1024 || brightnessLevel == 255) { //maxed value
-    Serial.println(brightnessLevel);
+    Serial.printf("Light received %d, Brightness: %d \n", sensorValue, brightnessLevel);
+    brightnessLevel -= 1;
   } else if (sensorValue < 1024) {
     Serial.printf("Light received %d, Brightness: %d \n", sensorValue, brightnessLevel);
     brightnessLevel += 1;
   }
+  delay(50);
 }
