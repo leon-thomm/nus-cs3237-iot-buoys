@@ -5,10 +5,10 @@ import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:light/light.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-import 'package:torch_light/torch_light.dart';
 import 'package:wakelock/wakelock.dart';
 
 void main() async {
@@ -59,6 +59,10 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
+
+  // Lux Sensor Setup
+  static final Light _light = Light();
+
   // Camera Setup
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
@@ -73,7 +77,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String statusMessageMqtt    = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // Socket Setup
-  static String socketAddress = '192.168.43.1';         // IP of the local socket server (this is the default IP of mobile hotspots)
+  static String socketAddress = '192.168.14.151';       // IP of the local socket server (this is the default IP of mobile hotspots)
   static int socketPort       = 4567;                   // Port of the local socket server     
   bool running                = false;                  // Used to enable or disable button           
   late ServerSocket server;                             // Server Object; late tells dart compiler that it will be initialised later 
@@ -189,6 +193,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (kDebugMode) {
       print("setting up...");
     }
+
+    // Adding Accelometer
     _streamSubscriptions.add(
       userAccelerometerEvents.listen(
         (UserAccelerometerEvent event) {
@@ -199,15 +205,20 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
 
+    // Adding Lux Sensor
+   /* _streamSubscriptions.add(
+      _light.lightSensorStream.listen((event) { })
+    );*/
+
     // Create Camera Controller
-    _controller = CameraController(
+    /*_controller = CameraController(
       // Get a specific camera from the list of available cameras.
       widget.camera,
       // Define the resolution to use.
-      ResolutionPreset.medium,
+      ResolutionPreset.low,
     );
     // Next, initialize the controller. This returns a Future.
-    _initializeControllerFuture = _controller.initialize();
+    _initializeControllerFuture = _controller.initialize();*/
   }
   
   @override
@@ -218,7 +229,7 @@ class _MyHomePageState extends State<MyHomePage> {
       subscription.cancel();
     }
 
-    _controller.dispose();
+    //_controller.dispose();
   }
   
 
@@ -228,6 +239,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> turnoffTorch() async {
     await _controller.setFlashMode(FlashMode.off);
+  }
+
+  Future<double> getExposureOffSet() async {
+    return await _controller.getExposureOffsetStepSize();
   }
 
 
@@ -248,13 +263,18 @@ class _MyHomePageState extends State<MyHomePage> {
       return null;
     }
   }
+
+  bool _showCamera = false;
+
+
   @override
   Widget build(BuildContext context) {
 
     // Access Accelometer without gravity effects
     final accelerometer =
         _accelerometerValues?.map((double v) => v.toStringAsFixed(1)).toList();
-  
+
+
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
@@ -268,7 +288,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               children: [
                 Expanded(child: Container()),
-                const Text("Hosting Socket at 192.168.43.1:4567"),
+                Text("Hosting Socket at $socketAddress:$socketPort"),
                 Expanded(child: Container())
               ],
             ),
@@ -312,13 +332,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container()),
                 (!running) ? TextButton(
                   onPressed: () async {
+                  /*
+                    For now disabled as we do not need to measure visibility with the phone
 
                     try {
                       await turnOnTorch();
                     } catch (e) {
                       if (kDebugMode) print(e);
                     }
-
+                  */
                     // Create Server
                     try{
                       server = await ServerSocket.bind(socketAddress, socketPort);
@@ -367,16 +389,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     setState(() {
                       running = true;
                     });
+                   
                   },
                   child: const Text("Press to start")
                 ) : TextButton(onPressed: () async {
+                  /*
+
+                  Not necessary for now as we dont measure visibility with phone
 
                   try {
                     await turnoffTorch();
                   } catch (e) {
                     if (kDebugMode) print(e);
                   }
-
+                  */
                   try{
                     await server.close();
                     statusMessageSocket = "Not Started";
@@ -393,8 +419,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container()),
               ],
             ),
+            /*Switch(value: _showCamera, onChanged: (val) {
+              if (kDebugMode) print(val);
+              setState(() {
+                _showCamera = val;
+              });
+              
+            }),
             const SizedBox(height: 20,),
-            Row(
+            (_showCamera) ? Row(
               children: [
                 Expanded(child: Container()),
                 // View of the camera
@@ -416,7 +449,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 Expanded(child: Container())
               ],
-            )
+            ) : Container()*/
           ],
         ),
       ),

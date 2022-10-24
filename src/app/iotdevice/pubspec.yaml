@@ -41,6 +41,7 @@ dependencies:
   sensors_plus: ^1.4.1
   wakelock: ^0.6.2
   torch_light: ^0.4.0
+  light: ^2.1.0
 
 dev_dependencies:
   flutter_test:
