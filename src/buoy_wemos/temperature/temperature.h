@@ -20,17 +20,19 @@ namespace temperature {
         // pinMode(TEMP_PIN, INPUT);
     }
 
-    float read() {
-        int v = adc::read(adc_channel) * 1024.0;
-        // int v = analogRead(TEMP_PIN);
-
-        R2 = R1 * (1023.0 / (float)v - 1.0); // calculate resistance on thermistor
+    float convert(float v) {
+        R2 = R1 * (1.0 / v - 1.0); // calculate resistance on thermistor
         logR2 = log(R2);
         T = (1.0 / (c1 + c2*logR2 + c3*logR2*logR2*logR2)); // temperature in Kelvin
         T = T - 273.15; // convert Kelvin to Celcius
         // T = (T * 9.0)/ 5.0 + 32.0; //convert Celcius to Farenheit
         return T;
     }
+
+    float read() {
+        return convert(adc::read(adc_channel));
+    }
+
 }
 
 /*
