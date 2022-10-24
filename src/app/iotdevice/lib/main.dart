@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:iotdevice/data_class.dart';
 import 'package:light/light.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
@@ -84,7 +86,18 @@ class _MyHomePageState extends State<MyHomePage> {
   String statusMessageSocket  = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // send buffer
-  var toSend = [];
+  List<DataClass> toSend = [];
+
+  void publishData() {
+    if (toSend.length > sendThreshold && running) {
+        final builder = MqttClientPayloadBuilder();
+        String data2SendStr = jsonEncode(toSend);
+        if (kDebugMode) print(data2SendStr);
+        builder.addString(data2SendStr);
+        toSend.removeRange(0, 10);
+        mqttclient.publishMessage(topic, MqttQos.exactlyOnce, builder.payload!);
+      }
+  }
   
   void connected() {
     if (kDebugMode) {
@@ -142,7 +155,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       }
 
-      toSend.add(message);
+      //toSend.add(message);
       // Simple Response 
       if (message == "Ping"){
         client.write("Pong");
@@ -154,14 +167,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
 
       // publish data to mqtt if toSend is larger than certain threshold (in this case 10)
-      if (toSend.length > sendThreshold) {
-        final builder = MqttClientPayloadBuilder();
-        var data2Send = toSend.getRange(0, 10);
-        String data2SendStr = data2Send.toString();
-        builder.addString(data2SendStr);
-        toSend.removeRange(0, 10);
-        mqttclient.publishMessage(topic, MqttQos.exactlyOnce, builder.payload!);
-      }
+      publishData();
     },
 
     // handle errors
@@ -201,6 +207,20 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             _accelerometerValues = <double>[event.x, event.y, event.z];
           });
+
+          // Alert this is for debug purposes only
+          // Add accelometer data to toSend
+          int timestamp = DateTime.now().microsecondsSinceEpoch; //DateTime.
+          DataClass data = DataClass(_accelerometerValues![0],
+                                     _accelerometerValues![1],
+                                     _accelerometerValues![2], 
+                                      28.0, 
+                                      512, 
+                                      timestamp
+                                    );
+
+          if (running) toSend.add(data);
+          publishData();
         },
       ),
     );
