@@ -79,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String statusMessageMqtt    = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // Socket Setup
-  static String socketAddress = '192.168.14.151';       // IP of the local socket server (this is the default IP of mobile hotspots)
+  static String socketAddress = '192.168.43.1';       // IP of the local socket server (this is the default IP of mobile hotspots)
   static int socketPort       = 4567;                   // Port of the local socket server     
   bool running                = false;                  // Used to enable or disable button           
   late ServerSocket server;                             // Server Object; late tells dart compiler that it will be initialised later 
@@ -94,8 +94,14 @@ class _MyHomePageState extends State<MyHomePage> {
         String data2SendStr = jsonEncode(toSend);
         if (kDebugMode) print(data2SendStr);
         builder.addString(data2SendStr);
-        toSend.removeRange(0, 10);
-        mqttclient.publishMessage(topic, MqttQos.exactlyOnce, builder.payload!);
+        try {
+          int res = mqttclient.publishMessage(topic, MqttQos.exactlyOnce, builder.payload!);
+          if (kDebugMode) print("Publish Result $res");
+          toSend = [];
+        }catch (e){
+          if (kDebugMode) print(e.toString());
+
+        }
       }
   }
   
@@ -144,22 +150,14 @@ class _MyHomePageState extends State<MyHomePage> {
     // handle data from the client
     (Uint8List data) async {
       
-      if (kDebugMode) {
-        print(data);
-      }
-     
       final message = String.fromCharCodes(data);
       if (kDebugMode) {
-        print(data);
         print(message);
-
       }
-
-      //toSend.add(message);
-      // Simple Response 
-      if (message == "Ping"){
-        client.write("Pong");
-      }
+      
+      // DataClass object from the provided message
+      DataClass tmp = DataClass.fromJson(json.decode(message));
+      toSend.add(tmp);      
 
       // Close Connection Call
       if (message.compareTo("Bye")==0){
@@ -211,16 +209,15 @@ class _MyHomePageState extends State<MyHomePage> {
           // Alert this is for debug purposes only
           // Add accelometer data to toSend
           int timestamp = DateTime.now().microsecondsSinceEpoch; //DateTime.
-          DataClass data = DataClass(_accelerometerValues![0],
-                                     _accelerometerValues![1],
-                                     _accelerometerValues![2], 
+          DataClass data = DataClass(_accelerometerValues!,
+                                      [0,0,0],
                                       28.0, 
                                       512, 
                                       timestamp
                                     );
 
-          if (running) toSend.add(data);
-          publishData();
+         /* if (running) toSend.add(data);
+          publishData();*/
         },
       ),
     );

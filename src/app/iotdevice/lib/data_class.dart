@@ -1,26 +1,23 @@
 class DataClass {
-  late double x;
-  late double y;
-  late double z;
+  late List<dynamic> acc;
+  late List<dynamic> gyro;
   late double temperature;
   late double photoresistor;
   late int timeStamp;
   // location data is still missing
 
-  DataClass(this.x, this.y, this.z,this.temperature, this.photoresistor, this.timeStamp);
+  DataClass(this.acc, this.gyro ,this.temperature, this.photoresistor, this.timeStamp);
   Map toJson() => {
-        'x': x,
-        'y': y,
-        'z': z,
+        'acc': acc,
+        'gyro': gyro,
         'temp': temperature,
         'light': photoresistor,
         'time': timeStamp
   };
   
   DataClass.fromJson(Map<String, dynamic> json)
-      : x = json['x'],
-        y = json['y'],
-        z = json['z'],
+      : acc = json['acc'],
+        gyro = json['gyro'],
         temperature = json['temp'],
         photoresistor = json['light'],
         timeStamp = json['time'];
