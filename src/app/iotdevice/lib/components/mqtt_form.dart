@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:iotdevice/models/data_class.dart';
 
 const textInputDecoration = InputDecoration(
-    fillColor: Color(0xFFE0E0E0),
     filled: true,
     enabledBorder: OutlineInputBorder(
         borderSide: BorderSide(color: Color(0xFFE0E0E0), width: 2.0)),
     focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.pink, width: 2.0)));
+        borderSide: BorderSide(color: Colors.blue, width: 2.0)));
 
 class FieldValidators {
   static String? doubleValidator(String? val) {
@@ -18,7 +18,11 @@ class FieldValidators {
 }
 
 class MqttForm extends StatefulWidget {
-  const MqttForm({Key? key}) : super(key: key);
+  const MqttForm({Key? key, required this.onSend, required this.onAdd})
+      : super(key: key);
+
+  final ValueSetter<DataClass> onSend;
+  final ValueSetter<DataClass> onAdd;
 
   @override
   State<StatefulWidget> createState() {
@@ -35,9 +39,34 @@ class _MqttFormState extends State<MqttForm> {
   TextEditingController x = TextEditingController();
   TextEditingController y = TextEditingController();
   TextEditingController z = TextEditingController();
+  TextEditingController gRes = TextEditingController();
+  TextEditingController roll = TextEditingController();
+  TextEditingController pitch = TextEditingController();
+  TextEditingController yaw = TextEditingController();
 
-  onPressed() {
+  DataClass onPressed() {
+    DataClass datum = DataClass([
+      double.parse(x.text),
+      double.parse(y.text),
+      double.parse(z.text),
+      double.parse(gRes.text)
+    ], [
+      double.parse(roll.text),
+      double.parse(pitch.text),
+      double.parse(yaw.text)
+    ], double.parse(temp.text), double.parse(light.text), int.parse(time.text));
 
+    return datum;
+  }
+
+  void sendPacket() {
+    DataClass data = onPressed();
+    widget.onSend(data);
+  }
+
+  void addToBuffer() {
+    DataClass data = onPressed();
+    widget.onAdd(data);
   }
 
   @override
@@ -64,24 +93,61 @@ class _MqttFormState extends State<MqttForm> {
           keyboardType: TextInputType.number,
           validator: FieldValidators.doubleValidator,
         ),
-        TextFormField(
-          controller: x,
-          decoration: textInputDecoration.copyWith(hintText: 'x'),
-          keyboardType: TextInputType.number,
-          validator: FieldValidators.doubleValidator,
+        Row(
+          children: [
+            Expanded(child: TextFormField(
+              controller: x,
+              decoration: textInputDecoration.copyWith(hintText: 'x'),
+              keyboardType: TextInputType.number,
+              validator: FieldValidators.doubleValidator,
+            )),
+            Expanded(child:TextFormField(
+              controller: y,
+              decoration: textInputDecoration.copyWith(hintText: 'y'),
+              keyboardType: TextInputType.number,
+              validator: FieldValidators.doubleValidator,
+            )),
+            Expanded(child:TextFormField(
+              controller: z,
+              decoration: textInputDecoration.copyWith(hintText: 'z'),
+              keyboardType: TextInputType.number,
+              validator: FieldValidators.doubleValidator,
+            )),
+            Expanded(child: TextFormField(
+              controller: gRes,
+              decoration: textInputDecoration.copyWith(hintText: 'g_res'),
+              keyboardType: TextInputType.number,
+              validator: FieldValidators.doubleValidator,
+            ))
+          ],
         ),
-        TextFormField(
-          controller: y,
-          decoration: textInputDecoration.copyWith(hintText: 'y'),
-          keyboardType: TextInputType.number,
-          validator: FieldValidators.doubleValidator,
-        ),
-        TextFormField(
-          controller: z,
-          decoration: textInputDecoration.copyWith(hintText: 'z'),
-          keyboardType: TextInputType.number,
-          validator: FieldValidators.doubleValidator,
-        ), TextButton(onPressed: onPressed, child: const Text('Create packet'))
+        Row(children: [
+          Expanded(child:TextFormField(
+            controller: roll,
+            decoration: textInputDecoration.copyWith(hintText: 'roll'),
+            keyboardType: TextInputType.number,
+            validator: FieldValidators.doubleValidator,
+          )),
+          Expanded(
+            child: TextFormField(
+              controller: pitch,
+              decoration: textInputDecoration.copyWith(hintText: 'pitch'),
+              keyboardType: TextInputType.number,
+              validator: FieldValidators.doubleValidator,
+            ),
+          ),
+          Expanded(
+            child: TextFormField(
+              controller: yaw,
+              decoration: textInputDecoration.copyWith(hintText: 'yaw'),
+              keyboardType: TextInputType.number,
+              validator: FieldValidators.doubleValidator,
+            ),
+          )
+        ]),
+        TextButton(
+            onPressed: addToBuffer, child: const Text('Add packet to buffer')),
+        TextButton(onPressed: sendPacket, child: const Text('Send packet'))
       ],
     ));
   }

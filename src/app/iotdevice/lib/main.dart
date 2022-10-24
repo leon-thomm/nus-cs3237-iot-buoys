@@ -1,5 +1,9 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:iotdevice/screens/homepage.dart';
+import 'package:iotdevice/services/mqtt_client_service.dart';
+import 'package:provider/provider.dart';
+
 
 void main() async {
   // can be called before `runApp()`
@@ -10,7 +14,6 @@ void main() async {
 
   // Get a specific camera from the list of available cameras.
   final firstCamera = cameras.first;
-
   runApp(MyApp(
     camera: firstCamera,
   ));
@@ -28,10 +31,14 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'IoT',
       theme: ThemeData.dark(),
-      home: MyHomePage(
+      home: ChangeNotifierProvider(
+        create: (context) => MqttClientService(),
+        child: MyHomePage(
           title: 'IoT Checkin 2 Demo',
           camera: camera
         ),
+      )
+      
      
     );
   }

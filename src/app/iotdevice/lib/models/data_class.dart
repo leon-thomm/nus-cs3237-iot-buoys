@@ -7,6 +7,7 @@ class DataClass {
   // location data is still missing
 
   DataClass(this.acc, this.gyro ,this.temperature, this.photoresistor, this.timeStamp);
+
   Map toJson() => {
         'acc': acc,
         'gyro': gyro,

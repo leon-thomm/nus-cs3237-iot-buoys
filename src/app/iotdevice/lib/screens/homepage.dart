@@ -7,14 +7,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iotdevice/components/mqtt_form.dart';
 import 'package:iotdevice/models/data_class.dart';
+import 'package:iotdevice/services/mqtt_client_service.dart';
 import 'package:light/light.dart';
-import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
+import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:wakelock/wakelock.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title, required this.camera}) : super(key: key);
+  const MyHomePage({Key? key, required this.title, required this.camera})
+      : super(key: key);
 
   final String title;
   final CameraDescription camera;
@@ -31,13 +33,6 @@ class _MyHomePageState extends State<MyHomePage> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
 
-  // MQTT Setup
-  static String mqttAddress = '104.248.98.70'; // IP of the Mqtt Server
-  static int mqttPort = 1883; // Port of the Mqtt Server
-  static String usr = "cs3237"; //
-  static String pwd = "thisisag00dp4ssw0rd"; //
-  static int sendThreshold =
-      10; // always sending #sendThreshold data collection to the mqtt server (might safe power)
   static String topic = 'test/abc'; // Topic to send the data to
   String statusMessageMqtt =
       "Not Started"; // Possible Status: Not Started, Running, Error
@@ -55,15 +50,12 @@ class _MyHomePageState extends State<MyHomePage> {
   // send buffer
   var toSend = [];
 
-  void publishData() {
-    if (toSend.length > sendThreshold && running) {
-      final builder = MqttClientPayloadBuilder();
+  void publishData(MqttClientService mqttclientservice) {
+    if (toSend.length > MqttClientService.sendThreshold && running) {
       String data2SendStr = jsonEncode(toSend);
       if (kDebugMode) print(data2SendStr);
-      builder.addString(data2SendStr);
       try {
-        int res = mqttclient.publishMessage(
-            topic, MqttQos.exactlyOnce, builder.payload!);
+        int res = mqttclientservice.publish(data2SendStr);
         if (kDebugMode) print("Publish Result $res");
         toSend = [];
       } catch (e) {
@@ -72,40 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void connected() {
-    if (kDebugMode) {
-      print("Connected");
-    }
-
-    setState(() {
-      statusMessageMqtt = "Running";
-    });
-  }
-
-  void disconnected() {
-    if (kDebugMode) {
-      print("Disconnected");
-    }
-
-    setState(() {
-      statusMessageMqtt = "Not Started";
-    });
-  }
-
-  void error() {
-    if (kDebugMode) {
-      print("Error Occured while connecting to Mqtt Server");
-    }
-
-    setState(() {
-      statusMessageMqtt = "Error";
-    });
-  }
-
-  MqttServerClient mqttclient =
-      MqttServerClient.withPort(mqttAddress, 'iot_device', mqttPort);
-
-  void handleConnection(Socket client) {
+  void handleConnection(Socket client, MqttClientService mqttClientService) {
     if (kDebugMode) {
       print('Connection from'
           ' ${client.remoteAddress.address}:${client.remotePort}');
@@ -133,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }
 
         // publish data to mqtt if toSend is larger than certain threshold (in this case 10)
-        publishData();
+        publishData(mqttClientService);
       },
 
       // handle errors
@@ -242,65 +201,32 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool _showCamera = false;
 
-  void setUpSocketServer() async {
+  void setUpSocketServer(MqttClientService mqttClientService) async {
     // Create Server
     try {
       server = await ServerSocket.bind(socketAddress, socketPort);
       server.listen((client) {
-        handleConnection(client);
+        handleConnection(client, mqttClientService);
       });
       statusMessageSocket = "Running";
       if (kDebugMode) {
         print("binding done");
       }
+      // Preventing the phone from falling asleep
+      Wakelock.enable();
+      setState(() {
+        running = true;
+      });
     } catch (e) {
       statusMessageSocket = e.toString();
     }
-
-    connectMqttClient();
-
-    // Preventing the phone from falling asleep
-    Wakelock.enable();
-    setState(() {
-      running = true;
-    });
   }
 
-  void connectMqttClient() async {
-    // Setup Mqtt Client
-    mqttclient.onConnected = connected;
-    mqttclient.onDisconnected = disconnected;
-    mqttclient.autoReconnect = true; // enabling auto reconnect
-
-    final connMessage = MqttConnectMessage()
-        .authenticateAs(usr, pwd)
-        .withWillTopic('willtopic')
-        .withWillMessage('Will message')
-        .startClean()
-        .withWillQos(MqttQos.atLeastOnce);
-
-    mqttclient.keepAlivePeriod = 60;
-
-    mqttclient.connectionMessage = connMessage;
-
-    try {
-      await mqttclient.connect();
-      if (kDebugMode) {
-        print("Connected to Mqtt Server");
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error Connecting');
-      }
-      error();
-    }
-  }
-
-  void closeSocketServer() async {
+  void closeSocketServer(MqttServerClient mqttClient) async {
     await server.close();
     statusMessageSocket = "Not Started";
 
-    mqttclient.disconnect();
+    mqttClient.disconnect();
     running = false;
 
     Wakelock.disable();
@@ -309,6 +235,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    MqttClientService mqttclientservice = Provider.of<MqttClientService>(context, listen: true);
+    MqttServerClient mqttclient = mqttclientservice.getClient;
     // Access Accelometer without gravity effects
     final accelerometer =
         _accelerometerValues?.map((double v) => v.toStringAsFixed(1)).toList();
@@ -359,7 +287,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               children: [
                 Expanded(child: Container()),
-                Text("Status MQTT Client: $statusMessageMqtt"),
+                Text("Status MQTT Client: ${MqttClientService.statusMessageMqtt}"),
                 Expanded(child: Container())
               ],
             ),
@@ -382,10 +310,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container()),
                 (!running)
                     ? TextButton(
-                        onPressed: setUpSocketServer,
+                        onPressed: () {
+                          setUpSocketServer(mqttclientservice);
+                          mqttclientservice.connectMqttClient();
+                        },
                         child: const Text("Press to start"))
                     : TextButton(
-                        onPressed: closeSocketServer,
+                        onPressed: () => closeSocketServer(mqttclient),
                         child: const Text("Press to Stop")),
                 Expanded(child: Container())
               ],
@@ -424,7 +355,17 @@ class _MyHomePageState extends State<MyHomePage> {
             const SizedBox(
               height: 20,
             ),
-            const MqttForm()
+            Center(
+              child: MqttForm(
+                onAdd: (value) {
+                  toSend.add(value);
+                },
+                onSend: (value) {
+                  String s = json.encode(value.toJson());
+                  mqttclientservice.publish(s);
+                },
+              ),
+            )
           ],
         ),
       ),
