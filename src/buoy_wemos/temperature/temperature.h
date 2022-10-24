@@ -1,7 +1,7 @@
 #include "../adc/adc.h"
 
 namespace temperature {
-    // #define TEMP_PIN A0
+
     #define TEMP_VOLAGE 3.3
 
     int adc_channel;
@@ -34,19 +34,8 @@ namespace temperature {
 }
 
 /*
-    example:
+    SETUP
 
-void setup()
-{
-  Serial.begin(9600);
-  initialize_temp();
-}
- 
-void loop()
-{
-    Serial.print("Temperature:\t\t"); 
-    Serial.println(read_temp());
+    see photores.h
 
-    delay(1000);                                     //waiting a second
-}
 */
