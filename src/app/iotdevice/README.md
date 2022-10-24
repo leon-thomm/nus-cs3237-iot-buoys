@@ -1,16 +1,17 @@
 # iotdevice
 
-A new Flutter project.
+Android App for Bouy IoT
 
-## Getting Started
+## General
 
-This project is a starting point for a Flutter application.
+The phone works as a gateway between cloud and WeMOS. Additionally, the phone provides data like GPS.
+The application needs to be started manually by pressing the "Start" button.
 
-A few resources to get you started if this is your first Flutter project:
+## Phone WeMOS
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Connention works via plain TCP Socket. Receiving raw values from the WeMOS and putting them into a data data structure which is later converted to a JSON string.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Phone Cloud
+
+Connection works via Mqtt. Data is always send in bulk (10 data packets at a time). In case of losing the connection the phone tries to reconnect to the cloud.
+

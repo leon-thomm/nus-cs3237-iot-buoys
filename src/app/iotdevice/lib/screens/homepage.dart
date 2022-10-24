@@ -1,33 +1,36 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iotdevice/components/mqtt_form.dart';
+import 'package:iotdevice/models/data_class.dart';
+import 'package:light/light.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:wakelock/wakelock.dart';
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+  const MyHomePage({Key? key, required this.title, required this.camera}) : super(key: key);
 
   final String title;
+  final CameraDescription camera;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // Lux Sensor Setup
+  static final Light _light = Light();
+
+  // Camera Setup
+  late CameraController _controller;
+  late Future<void> _initializeControllerFuture;
+
   // MQTT Setup
   static String mqttAddress = '104.248.98.70'; // IP of the Mqtt Server
   static int mqttPort = 1883; // Port of the Mqtt Server
@@ -35,7 +38,7 @@ class _MyHomePageState extends State<MyHomePage> {
   static String pwd = "thisisag00dp4ssw0rd"; //
   static int sendThreshold =
       10; // always sending #sendThreshold data collection to the mqtt server (might safe power)
-  static String topic = 'topic/test'; // Topic to send the data to
+  static String topic = 'test/abc'; // Topic to send the data to
   String statusMessageMqtt =
       "Not Started"; // Possible Status: Not Started, Running, Error
 
@@ -51,6 +54,23 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // send buffer
   var toSend = [];
+
+  void publishData() {
+    if (toSend.length > sendThreshold && running) {
+      final builder = MqttClientPayloadBuilder();
+      String data2SendStr = jsonEncode(toSend);
+      if (kDebugMode) print(data2SendStr);
+      builder.addString(data2SendStr);
+      try {
+        int res = mqttclient.publishMessage(
+            topic, MqttQos.exactlyOnce, builder.payload!);
+        if (kDebugMode) print("Publish Result $res");
+        toSend = [];
+      } catch (e) {
+        if (kDebugMode) print(e.toString());
+      }
+    }
+  }
 
   void connected() {
     if (kDebugMode) {
@@ -101,15 +121,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
         final message = String.fromCharCodes(data);
         if (kDebugMode) {
-          print(data);
           print(message);
         }
 
+        DataClass tmp = DataClass.fromJson(json.decode(message));
         toSend.add(message);
-        // Simple Response
-        if (message == "Ping") {
-          client.write("Pong");
-        }
 
         // Close Connection Call
         if (message.compareTo("Bye") == 0) {
@@ -117,15 +133,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }
 
         // publish data to mqtt if toSend is larger than certain threshold (in this case 10)
-        if (toSend.length > sendThreshold) {
-          final builder = MqttClientPayloadBuilder();
-          var data2Send = toSend.getRange(0, 10);
-          String data2SendStr = data2Send.toString();
-          builder.addString(data2SendStr);
-          toSend.removeRange(0, 10);
-          mqttclient.publishMessage(
-              topic, MqttQos.atLeastOnce, builder.payload!);
-        }
+        publishData();
       },
 
       // handle errors
@@ -145,7 +153,6 @@ class _MyHomePageState extends State<MyHomePage> {
       },
     );
   }
-  
 
   List<double>? _accelerometerValues;
   final _streamSubscriptions = <
@@ -160,15 +167,40 @@ class _MyHomePageState extends State<MyHomePage> {
     if (kDebugMode) {
       print("setting up...");
     }
+
+    // Adding Accelometer
     _streamSubscriptions.add(
       userAccelerometerEvents.listen(
         (UserAccelerometerEvent event) {
           setState(() {
             _accelerometerValues = <double>[event.x, event.y, event.z];
           });
+
+          // Alert this is for debug purposes only
+          // Add accelometer data to toSend
+          int timestamp = DateTime.now().microsecondsSinceEpoch; //DateTime.
+          DataClass data =
+              DataClass(_accelerometerValues!, [0, 0, 0], 28.0, 512, timestamp);
+          /* if (running) toSend.add(data);
+          publishData();*/
         },
       ),
     );
+
+    // Adding Lux Sensor
+    /* _streamSubscriptions.add(
+      _light.lightSensorStream.listen((event) { })
+    );*/
+
+    // Create Camera Controller
+    /*_controller = CameraController(
+      // Get a specific camera from the list of available cameras.
+      widget.camera,
+      // Define the resolution to use.
+      ResolutionPreset.low,
+    );
+    // Next, initialize the controller. This returns a Future.
+    _initializeControllerFuture = _controller.initialize();*/
   }
 
   @override
@@ -180,11 +212,40 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  Future<void> turnOnTorch() async {
+    await _controller.setFlashMode(FlashMode.torch);
+  }
+
+  Future<void> turnoffTorch() async {
+    await _controller.setFlashMode(FlashMode.off);
+  }
+
+  Future<double> getExposureOffSet() async {
+    return await _controller.getExposureOffsetStepSize();
+  }
+
+  Future<XFile?> takePicture() async {
+    // turn flash on
+    _controller.setFlashMode(FlashMode.always);
+
+    if (_controller.value.isTakingPicture) {
+      return null;
+    }
+
+    try {
+      XFile file = await _controller.takePicture();
+      return file;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  bool _showCamera = false;
+
   void setUpSocketServer() async {
     // Create Server
     try {
-      server = await ServerSocket.bind(
-          socketAddress, socketPort);
+      server = await ServerSocket.bind(socketAddress, socketPort);
       server.listen((client) {
         handleConnection(client);
       });
@@ -203,7 +264,6 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       running = true;
     });
-  
   }
 
   void connectMqttClient() async {
@@ -237,12 +297,13 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void closeSocketServer() async {
-
     await server.close();
     statusMessageSocket = "Not Started";
 
     mqttclient.disconnect();
     running = false;
+
+    Wakelock.disable();
     statusMessageMqtt = "Not Started";
   }
 
@@ -267,7 +328,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               children: [
                 Expanded(child: Container()),
-                Text("Hosting Socket at $socketAddress : $socketPort"),
+                Text("Hosting Socket at $socketAddress:$socketPort"),
                 Expanded(child: Container())
               ],
             ),
@@ -329,6 +390,37 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container())
               ],
             ),
+            /*Switch(value: _showCamera, onChanged: (val) {
+              if (kDebugMode) print(val);
+              setState(() {
+                _showCamera = val;
+              });
+              
+            }),
+            const SizedBox(height: 20,),
+            (_showCamera) ? Row(
+              children: [
+                Expanded(child: Container()),
+                // View of the camera
+                SizedBox(
+                  height: 100,
+                  width: 100,
+                  child: FutureBuilder<void>(
+                    future: _initializeControllerFuture,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.done) {
+                        // If the Future is complete, display the preview.
+                        return CameraPreview(_controller);
+                      } else {
+                        // Otherwise, display a loading indicator.
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                    },
+                  ),
+                ),
+                Expanded(child: Container())
+              ],
+            ) : Container()*/
             const SizedBox(
               height: 20,
             ),
