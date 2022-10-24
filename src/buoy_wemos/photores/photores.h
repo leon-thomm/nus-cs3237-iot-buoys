@@ -16,22 +16,11 @@ namespace photores {
 
 
 /*
-    setup
+
+    SETUP
 
     - connect S to +3.3V
     - connect middle to GND
     - connect - to analog in
 
-    example
-
-void setup() {
-    Serial.begin(9600);
-    initialize_photores();
-}
-
-void loop() {
-    float v = read_photores();
-    Serial.print("brightness:\t\t");
-    Serial.println(v);
-}
 */
