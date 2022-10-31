@@ -5,10 +5,12 @@ services:
     image: mongo
     restart: always
     environment:
+      MONGO_INITDB_DATABASE: cs3237
       MONGO_INITDB_ROOT_USERNAME: cs3237
       MONGO_INITDB_ROOT_PASSWORD: thisisag00dp4ssw0rd
     volumes: 
-      - /data/db
+      - ./db:/data/db
+      - ./mongo/init-mongo.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     ports:
       - 27017:27017
     container_name: mongo

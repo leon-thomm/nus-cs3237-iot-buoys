@@ -16,8 +16,8 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe("test/#")
         now = datetime.now().strftime(TIME_FORMAT)
         print("%s [!] Connected, code = %s" % (now, str(rc)))
-    except:
-        print("%s [-] Error connecting" % now)
+    except Exception as e:
+        print("%s [-] Error connecting: %s" % (str(now), e))
 
 def on_message(client, userdata, msg):
     doc = msg.topic.split("/")[1]
@@ -31,8 +31,8 @@ def on_message(client, userdata, msg):
 
     except json.JSONDecodeError:
         print("%s [-] JSON Decode Error \n     Payload = %s", (now, data))
-    except:
-        print("%s [-] MongoDB Error", now)
+    except Exception as e:
+        print("%s [-] MongoDB Error: %s", (now, e))
 
 mongo_client = MongoClient(MONGO_IP)
 db = mongo_client['cs3237']
