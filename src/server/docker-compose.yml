@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: cs3237
+      MONGO_INITDB_ROOT_PASSWORD: thisisag00dp4ssw0rd
+    volumes: 
+      - /data/db
+    ports:
+      - 27017:27017
+    container_name: mongo
+  mosquitto:
+    image: eclipse-mosquitto
+    restart: always
+    volumes:
+      - ./conf/:/mosquitto/config/
+    ports:
+      - 1883:1883
+    container_name: broker
+  listener:
+    build: ./listener/
+    entrypoint: ["python3", "-u", "/usr/src/listener/mqtt-listener.py"]
+    container_name: listener
+    links:
+      - mosquitto
