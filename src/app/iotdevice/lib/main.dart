@@ -79,7 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String statusMessageMqtt    = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // Socket Setup
-  static String socketAddress = '192.168.14.151';       // IP of the local socket server (this is the default IP of mobile hotspots)
+  static String socketAddress = '192.168.216.226';       // IP of the local socket server (this is the default IP of mobile hotspots)
   static int socketPort       = 4567;                   // Port of the local socket server     
   bool running                = false;                  // Used to enable or disable button           
   late ServerSocket server;                             // Server Object; late tells dart compiler that it will be initialised later 
@@ -322,7 +322,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container())
               ],
             ),
-            const SizedBox(height: 20,),
+           /* const SizedBox(height: 20,),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
@@ -330,7 +330,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Text('Accelerometer: $accelerometer'),
                 Expanded(child: Container())
               ],
-            ),
+            ),*/
             const SizedBox(height: 20,),
             Row(
               children: [
@@ -500,8 +500,8 @@ class _MyHomePageState extends State<MyHomePage> {
             ) : Container()*/
           ] + (toSend.reversed).map((e) => Row( // Appending the latest 50 received data packets to a list view
             children: [
-              Expanded(child: Container()),
-              Text("Acc: ${e.acc.toString()}; Gyro: ${e.gyro.toString()} \n Temp: ${e.temperature}, Light: ${e.photoresistor}\n Time: ${e.timeStamp.toString()}")
+              Text("Acc: ${e.acc.toString()};\nGyro: ${e.gyro.toString()} \nTemp: ${e.temperature},\nLight: ${e.photoresistor}\n Time: ${e.timeStamp.toString()}"),
+              Expanded(child: Container())
               ],
           )).take(50).toList(),
         ),
