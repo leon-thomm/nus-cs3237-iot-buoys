@@ -1,8 +1,8 @@
 class DataClass {
   late List<dynamic> acc;
   late List<dynamic> gyro;
-  late double temperature;
-  late double photoresistor;
+  late dynamic temperature;
+  late dynamic photoresistor;
   late int timeStamp;
   // location data is still missing
 
