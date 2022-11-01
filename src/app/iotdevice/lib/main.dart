@@ -79,17 +79,18 @@ class _MyHomePageState extends State<MyHomePage> {
   String statusMessageMqtt    = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // Socket Setup
-  static String socketAddress = '192.168.43.1';       // IP of the local socket server (this is the default IP of mobile hotspots)
+  static String socketAddress = '192.168.14.151';       // IP of the local socket server (this is the default IP of mobile hotspots)
   static int socketPort       = 4567;                   // Port of the local socket server     
   bool running                = false;                  // Used to enable or disable button           
   late ServerSocket server;                             // Server Object; late tells dart compiler that it will be initialised later 
   String statusMessageSocket  = "Not Started";          // Possible Status: Not Started, Running, Error
+  bool sendData               = false;
 
   // send buffer
   List<DataClass> toSend = [];
 
   void publishData() {
-    if (toSend.length > sendThreshold && running) {
+    if (toSend.length > sendThreshold && sendData) {
         final builder = MqttClientPayloadBuilder();
         String data2SendStr = jsonEncode(toSend);
         if (kDebugMode) print(data2SendStr);
@@ -157,7 +158,9 @@ class _MyHomePageState extends State<MyHomePage> {
       
       // DataClass object from the provided message
       DataClass tmp = DataClass.fromJson(json.decode(message));
-      toSend.add(tmp);      
+      setState(() {
+        toSend.add(tmp);      
+      });
 
       // Close Connection Call
       if (message.compareTo("Bye")==0){
@@ -283,6 +286,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool _showCamera = false;
 
+
+  
 
   @override
   Widget build(BuildContext context) {
@@ -432,10 +437,36 @@ class _MyHomePageState extends State<MyHomePage> {
 
                   Wakelock.disable();
                   statusMessageMqtt = "Not Started";
+                  setState(() {
+                    sendData = false;
+                  });
                 }, child: const Text("Press to Stop")),
                 Expanded(child: Container()),
               ],
             ),
+            (running) ? Row (
+              children: [
+                Expanded(child: Container()),
+                (!sendData) ? TextButton(
+                  onPressed: () {
+                    // Empty toSend list, and start sending new incoming data
+                    toSend = [];
+
+                    setState(() {
+                      sendData = true;
+                    });
+                  },
+                  child: const Text("Starting Sending"))
+                  : TextButton(onPressed: () {
+                    setState(() {
+                      sendData = false;
+                    });
+                  },
+                   child: const Text("Stop Sending")),
+                   Expanded(child: Container())
+              ],
+            ) : Container(),
+
             /*Switch(value: _showCamera, onChanged: (val) {
               if (kDebugMode) print(val);
               setState(() {
@@ -467,7 +498,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(child: Container())
               ],
             ) : Container()*/
-          ],
+          ] + (toSend.reversed).map((e) => Row( // Appending the latest 50 received data packets to a list view
+            children: [
+              Expanded(child: Container()),
+              Text("Acc: ${e.acc.toString()}; Gyro: ${e.gyro.toString()} \n Temp: ${e.temperature}, Light: ${e.photoresistor}\n Time: ${e.timeStamp.toString()}")
+              ],
+          )).take(50).toList(),
         ),
       ),
     );
