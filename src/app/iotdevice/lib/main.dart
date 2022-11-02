@@ -18,20 +18,19 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Obtain a list of the available cameras on the device.
-  final cameras = await availableCameras();
+  // final cameras = await availableCameras();
 
   // Get a specific camera from the list of available cameras.
-  final firstCamera = cameras.first;
+  // final firstCamera = cameras.first;
 
   runApp(MyApp(
-    camera: firstCamera,
+    // camera: firstCamera,
   ));
 }
 
 class MyApp extends StatelessWidget {
 
-  const MyApp({Key? key, required this.camera,}) : super(key: key);
-  final CameraDescription camera;
+  const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
   
@@ -42,7 +41,6 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark(),
       home: MyHomePage(
           title: 'IoT Checkin 2 Demo',
-          camera: camera
         ),
      
     );
@@ -50,10 +48,9 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title, required this.camera}) : super(key: key);
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
 
   final String title;
-  final CameraDescription camera;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -64,10 +61,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Lux Sensor Setup
   static final Light _light = Light();
-
-  // Camera Setup
-  late CameraController _controller;
-  late Future<void> _initializeControllerFuture;
 
   // MQTT Setup
   static String mqttAddress   = '104.248.98.70';        // IP of the Mqtt Server
@@ -253,38 +246,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   
 
-  Future<void> turnOnTorch() async {
-    await _controller.setFlashMode(FlashMode.torch);
-  }
 
-  Future<void> turnoffTorch() async {
-    await _controller.setFlashMode(FlashMode.off);
-  }
-
-  Future<double> getExposureOffSet() async {
-    return await _controller.getExposureOffsetStepSize();
-  }
-
-
-  // Take picture with flash on 
-  Future<XFile?> takePicture() async {
-
-    // turn flash on
-    _controller.setFlashMode(FlashMode.always);
-
-    if (_controller.value.isTakingPicture) {
-      return null;
-    }
-
-    try {
-      XFile file = await _controller.takePicture();
-      return file;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  bool _showCamera = false;
 
 
   
