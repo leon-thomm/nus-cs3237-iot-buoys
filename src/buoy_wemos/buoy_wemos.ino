@@ -9,10 +9,11 @@
 
 #define MPU_ADDR 0x68
 #define ADC_ADDR 0x48   // hardwired
-#define FETCH_BASE_INT_MS 5000
+#define FETCH_BASE_INT_MS 1000
 
 int adc_address;
 int last_fetch;
+long timestamp;
 
 void wait() {
     int t = millis();
@@ -52,7 +53,7 @@ void setup()
     mpu::init(MPU_ADDR);
 
     // wifi
-    wifi::init();
+    timestamp = wifi::init();
 }
 
 void loop()
@@ -71,7 +72,7 @@ void loop()
 
     // generate json doc
     StaticJsonDocument<200> doc;
-    doc["time"] = millis();
+    doc["time"] = timestamp + millis();
     doc["temp"] = heat;
     doc["light"] = brightness;
     JsonArray acc_doc = doc.createNestedArray("acc");
