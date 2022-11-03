@@ -3,35 +3,27 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:iotdevice/data_class.dart';
-import 'package:light/light.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:wakelock/wakelock.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 void main() async {
   // can be called before `runApp()`
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Obtain a list of the available cameras on the device.
-  final cameras = await availableCameras();
 
-  // Get a specific camera from the list of available cameras.
-  final firstCamera = cameras.first;
-
-  runApp(MyApp(
-    camera: firstCamera,
-  ));
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
 
-  const MyApp({Key? key, required this.camera,}) : super(key: key);
-  final CameraDescription camera;
+  const MyApp({Key? key}) : super(key: key);
 
   // This widget is the root of your application.
   
@@ -40,9 +32,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'IoT',
       theme: ThemeData.dark(),
-      home: MyHomePage(
+      home:const  MyHomePage(
           title: 'IoT Checkin 2 Demo',
-          camera: camera
         ),
      
     );
@@ -50,10 +41,9 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title, required this.camera}) : super(key: key);
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
 
   final String title;
-  final CameraDescription camera;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -61,13 +51,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
-
-  // Lux Sensor Setup
-  static final Light _light = Light();
-
-  // Camera Setup
-  late CameraController _controller;
-  late Future<void> _initializeControllerFuture;
 
   // MQTT Setup
   static String mqttAddress   = '104.248.98.70';        // IP of the Mqtt Server
@@ -79,7 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String statusMessageMqtt    = "Not Started";          // Possible Status: Not Started, Running, Error
 
   // Socket Setup
-  static String socketAddress = '192.168.216.226';       // IP of the local socket server (this is the default IP of mobile hotspots)
+  static String socketAddress = '192.168.43.1';       // IP of the local socket server (this is the default IP of mobile hotspots)
   static int socketPort       = 4567;                   // Port of the local socket server     
   bool running                = false;                  // Used to enable or disable button           
   late ServerSocket server;                             // Server Object; late tells dart compiler that it will be initialised later 
@@ -88,6 +71,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // send buffer
   List<DataClass> toSend = [];
+  int _init_time = 0;
+
+  //Loading counter value on start
+  Future<void> _loadCounter() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _init_time = (prefs.getInt('init_time') ?? DateTime.now().millisecondsSinceEpoch);
+    });
+  }
 
   void publishData() {
     if (toSend.length > sendThreshold && sendData) {
@@ -145,6 +137,12 @@ class _MyHomePageState extends State<MyHomePage> {
       ' ${client.remoteAddress.address}:${client.remotePort}');
     }
 
+    // Providing WeMOS with the current timestamp
+    var time = DateTime.now().millisecondsSinceEpoch;
+    if (kDebugMode) {
+      print("Current Time: $time");
+    }
+ 
     // listen for events from the client
     client.listen(
 
@@ -156,19 +154,30 @@ class _MyHomePageState extends State<MyHomePage> {
         print(message);
       }
       
+      
       // DataClass object from the provided message
-      DataClass tmp = DataClass.fromJson(json.decode(message));
-      setState(() {
-        toSend.add(tmp);      
-      });
+      if (message == "reset"){
+        final prefs = await SharedPreferences.getInstance();
+        setState(() {
+          _init_time = time;
+          if (kDebugMode) print(_init_time);
+          prefs.setInt('init_time', _init_time);
+        });
+      }else{
+        DataClass tmp = DataClass.fromJson(json.decode(message));
+        tmp.timeStamp = tmp.timeStamp + _init_time;
+        setState(() {
+          toSend.add(tmp);      
+        });
 
-      // Close Connection Call
-      if (message.compareTo("Bye")==0){
-        client.close();
+        // Close Connection Call
+        if (message.compareTo("Bye")==0){
+          client.close();
+        }
+
+        // publish data to mqtt if toSend is larger than certain threshold (in this case 10)
+        publishData();
       }
-
-      // publish data to mqtt if toSend is larger than certain threshold (in this case 10)
-      publishData();
     },
 
     // handle errors
@@ -195,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    
+    _loadCounter();
     // setting up reading data from accelometer
     if (kDebugMode) {
       print("setting up...");
@@ -253,38 +262,38 @@ class _MyHomePageState extends State<MyHomePage> {
   }
   
 
-  Future<void> turnOnTorch() async {
-    await _controller.setFlashMode(FlashMode.torch);
-  }
+  // Future<void> turnOnTorch() async {
+  //   await _controller.setFlashMode(FlashMode.torch);
+  // }
 
-  Future<void> turnoffTorch() async {
-    await _controller.setFlashMode(FlashMode.off);
-  }
+  // Future<void> turnoffTorch() async {
+  //   await _controller.setFlashMode(FlashMode.off);
+  // }
 
-  Future<double> getExposureOffSet() async {
-    return await _controller.getExposureOffsetStepSize();
-  }
+  // Future<double> getExposureOffSet() async {
+  //   return await _controller.getExposureOffsetStepSize();
+  // }
 
 
-  // Take picture with flash on 
-  Future<XFile?> takePicture() async {
+  // // Take picture with flash on 
+  // Future<XFile?> takePicture() async {
 
-    // turn flash on
-    _controller.setFlashMode(FlashMode.always);
+  //   // turn flash on
+  //   _controller.setFlashMode(FlashMode.always);
 
-    if (_controller.value.isTakingPicture) {
-      return null;
-    }
+  //   if (_controller.value.isTakingPicture) {
+  //     return null;
+  //   }
 
-    try {
-      XFile file = await _controller.takePicture();
-      return file;
-    } catch (e) {
-      return null;
-    }
-  }
+  //   try {
+  //     XFile file = await _controller.takePicture();
+  //     return file;
+  //   } catch (e) {
+  //     return null;
+  //   }
+  // }
 
-  bool _showCamera = false;
+  // bool _showCamera = false;
 
 
   
@@ -292,9 +301,9 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
 
-    // Access Accelometer without gravity effects
-    final accelerometer =
-        _accelerometerValues?.map((double v) => v.toStringAsFixed(1)).toList();
+    // // Access Accelometer without gravity effects
+    // final accelerometer =
+    //     _accelerometerValues?.map((double v) => v.toStringAsFixed(1)).toList();
 
 
     return Scaffold(
