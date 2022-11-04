@@ -23,7 +23,7 @@ def on_message(client, userdata, msg):
     doc = msg.topic.split("/")[1]
     data = msg.payload.decode("utf-8")
     now = datetime.now().strftime(TIME_FORMAT)
-    print("%s [+] Incoming = %s..." % (now, data[:16]))
+    print("%s [+] Incoming = %s" % (now, data))
     try:
         dict = json.loads(data)
         for record in dict:

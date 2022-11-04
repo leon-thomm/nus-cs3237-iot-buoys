@@ -28,3 +28,11 @@ services:
     container_name: listener
     links:
       - mosquitto
+  web:
+    build: ./web/
+    entrypoint: ["python3", "-m" , "flask", "run", "--host=0.0.0.0"]
+    container_name: web
+    links:
+      - mongo
+    ports:
+      - 80:5000
