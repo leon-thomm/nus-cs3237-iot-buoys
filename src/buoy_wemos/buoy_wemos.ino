@@ -6,34 +6,24 @@
 #include "temperature/temperature.h"
 #include "mpu/mpu.h"
 #include "wifi/wifi.h"
+#include "scheduler/scheduler.h"
 
 #define MPU_ADDR 0x68
 #define ADC_ADDR 0x48   // hardwired
-#define FETCH_BASE_INT_MS 1000
 
 int adc_address;
-int last_fetch;
 
-void wait() {
-    int t = millis();
-    if(t - last_fetch < FETCH_BASE_INT_MS) {
-        delay(FETCH_BASE_INT_MS - (t - last_fetch));
-    }
-    last_fetch = millis();
-}
-
-void setup()
+void setup() 
 {
     Serial.begin(9600);
     while (!Serial) continue;
     delay(2000);
 
-    // I2C
-
+    // initiailze I2C
     Wire.begin();
-    // scan: make sure we find both I2C devices
+    // make sure we find both devices
     Serial.println("scanning for I2C devices...");
-    int* dev = i2c::scan(false);
+    int* dev = i2c::scan(true);
     Serial.println("found the following devices:");
     for(int i=0; i<dev[0]; i++) {
         Serial.print("device ");
@@ -42,7 +32,6 @@ void setup()
         Serial.print(dev[i+1]);
         Serial.println();
     }
-
     while(dev[0] != 2){}
 
     // initialize sensor interfaces
@@ -51,14 +40,17 @@ void setup()
     temperature::init(1);
     mpu::init(MPU_ADDR);
 
-    // wifi
+    // initialize wifi
     wifi::init();
+
+    // initialize scheduler
+    scheduler::init();
 }
 
 void loop()
 {
 
-    wait();
+    // scheduler::wait();
 
     // read adc
     float brightness = photores::read();
@@ -90,6 +82,8 @@ void loop()
 
     wifi::sendJSON(doc);
 
+    // scheduler::update(res_g, brightness);
+
     // print
 
     // Serial.print("photores:\t\t");
@@ -114,5 +108,5 @@ void loop()
     // Serial.print("\t\t");
     // Serial.println(gyr.z);
 
-    delay(1000);
+    // delay(1000);
 }
