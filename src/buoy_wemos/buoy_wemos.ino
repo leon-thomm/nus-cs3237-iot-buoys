@@ -13,7 +13,7 @@
 
 int adc_address;
 int last_fetch;
-long timestamp;
+long timestamp_offset;
 
 void wait() {
     int t = millis();
@@ -53,7 +53,7 @@ void setup()
     mpu::init(MPU_ADDR);
 
     // wifi
-    timestamp = wifi::init();
+    timestamp_offset = wifi::init();
 }
 
 void loop()
@@ -72,7 +72,7 @@ void loop()
 
     // generate json doc
     StaticJsonDocument<200> doc;
-    doc["time"] = timestamp + millis();
+    doc["time"] = millis() - timestamp_offset;
     doc["temp"] = heat;
     doc["light"] = brightness;
     JsonArray acc_doc = doc.createNestedArray("acc");
