@@ -9,6 +9,21 @@ namespace scheduler {
     int last_fetch;
     bool intense = true;
     int last_time_intense_detected = 0;
+    
+    /*
+        (slot method mechanism; currently unused)
+
+    void (*slot_switch_chill)() = nullptr;
+    void (*slot_switch_intense)() = nullptr;
+
+    void on_switch_to_chill(void (*f)()) {
+        slot_switch_chill = f;
+    }
+
+    void on_switch_to_intense(void (*f)()) {
+        slot_switch_intense = f;
+    }
+    */
 
     void init() {
         last_fetch = millis();
@@ -35,11 +50,17 @@ namespace scheduler {
     {
         intense = true;
         last_time_intense_detected = millis();
+        if (slot_switch_intense != nullptr) {
+            slot_switch_intense();
+        }
     }
 
     void set_chill()
     {
         intense = false;
+        if (slot_switch_chill != nullptr) {
+            slot_switch_chill();
+        }
     }
 
     void update(float g_force, float brightness)

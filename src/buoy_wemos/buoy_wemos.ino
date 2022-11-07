@@ -20,10 +20,9 @@ void setup()
     while (!Serial) continue;
     delay(2000);
 
-    // I2C
-
+    // initialize I2C
     Wire.begin();
-    // scan: make sure we find both I2C devices
+    //   make sure we find both I2C devices
     Serial.println("scanning for I2C devices...");
     int* dev = i2c::scan(false);
     Serial.println("found the following devices:");
@@ -43,10 +42,10 @@ void setup()
     temperature::init(1);
     mpu::init(MPU_ADDR);
 
-    // wifi
+    // initialize wifi
     timestamp_offset = wifi::init();
 
-    // scheduler
+    // initialize scheduler
     scheduler::init();
 }
 
@@ -55,16 +54,20 @@ void loop()
 
     scheduler::wait();
 
+    if(!scheduler::intense) photores::turn_light_on();
+
     // read adc
     float brightness = photores::read();
     float heat = temperature::read();
 
     // read mpu
+    
     xyzFloat acc = mpu::getG();
     xyzFloat gyr = mpu::getGyr();
     float res_g = mpu::getResG();
 
     // generate json doc
+    
     StaticJsonDocument<200> doc;
     doc["time"] = millis() - timestamp_offset;
     doc["temp"] = heat;
@@ -82,6 +85,10 @@ void loop()
     Serial.println();
 
     wifi::sendJSON(doc);
+
+    scheduler::update(res_g, brightness);
+
+    if(!scheduler::intense) photores::turn_light_off();
 
     // print
 
