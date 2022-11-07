@@ -72,11 +72,11 @@ def fetchLastTen():
 
     def scale_axis(data):
         data = abs(float(data))
-        return data > 1 ? : 1.0 : (data / 7)
+        return 1.0 if data > 1 else (data / 7)
 
     def scale_degree(data):
         data = abs(float(data))
-        return data > 180 : 180.0 : (data / 1260.0)
+        return 1.0 if data > 180 else (data / 1260.0)
 
     res = db.abc.find().sort("time", -1).limit(10)
     for record in res:
