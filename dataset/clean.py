@@ -17,6 +17,7 @@ def nov03(f1):
             f1.write(values[7].strip("\]\"") + ",")
             f1.write(values[8] + ",")
             f1.write(clean_temp0() + ",")
+            print(values[10])
             f1.write(values[10])
 
 def nov04(f1):
