@@ -102,10 +102,13 @@ def fetchLastTen():
     tempTen = lastTen["temp"]
     lightTen = lastTen["light"]
     turbulenceTen = lastTen["turbulence"]
+    print("10temps = ", tempTen)
+    print("10light = ", lightTen)
+    print("10turbu = ", turbulenceTen)
 
-    predTemp = temp_model.predict([tempTen])
-    predLight = light_model.predict([lightTen])
-    predTurbulence = turbulence_model.predict([turbulenceTen])
+    predTemp = temp_model.predict([[tempTen]])
+    predLight = light_model.predict([[lightTen]])
+    predTurbulence = turbulence_model.predict([[turbulenceTen]])
 
-    return { "temp": predTemp, "light": predLight, "turbulence": predTurbulence }
+    return { "temp": predTemp.tolist(), "light": predLight.tolist(), "turbulence": predTurbulence.tolist() }
         
