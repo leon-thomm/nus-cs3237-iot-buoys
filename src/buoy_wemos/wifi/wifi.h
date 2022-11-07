@@ -5,16 +5,32 @@
 
 namespace wifi {
 
-    const char* ssid = "AndroidAP"; //Your Wifi's SSID
-    const char* password = "bsnu4874"; //Wifi Password
+    const char* ssid = "iotbuoy";
+    const char* password = "abcd1234";
 
     WiFiClient client;
-    // const char* laptopAt = "http://192.168.43.1/";
     IPAddress phone(192,168,43,1);
-    // WeMos IP: 192.168.43.33 (??)
-    // laptop IP: 192.168.43.156 (??)
+    // IPAddress phone(192,168,250,244);
 
-    void init(){
+    bool sendString(char* buf) {
+        if (client.connect(phone, 4567)) {
+            Serial.println("connected");
+            Serial.print("sending: ");
+            Serial.println(buf);
+
+            client.print(buf);
+        }
+        return true;
+    }
+
+    bool sendJSON(StaticJsonDocument<200> doc) {
+        char* buffer = (char*)malloc(sizeof(char) * 200);
+        serializeJson(doc, buffer, 200);
+        return sendString(buffer);
+    }
+
+    long init(){
+        WiFi.mode(WIFI_STA);    // possibly required for mqtt
         WiFi.begin(ssid, password);
 
         // Wait for connection
@@ -28,17 +44,9 @@ namespace wifi {
         Serial.println(ssid);
         Serial.print("IP address: ");
         Serial.println(WiFi.localIP());
-    }
 
-    bool sendJSON(StaticJsonDocument<200> doc) {
-        char* buffer = (char*)malloc(sizeof(char) * 200);
-        if (client.connect(phone, 4567)) {
-            Serial.println("connected");
-            serializeJson(doc, buffer, 200);
-            client.print(buffer);
-        }
-        return true;
-    
+        sendString("reset");
+        return millis();
     }
 
 }

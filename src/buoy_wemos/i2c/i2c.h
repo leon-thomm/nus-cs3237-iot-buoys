@@ -7,7 +7,7 @@ namespace i2c {
     #define MAX_I2C_DEVICES 127
 
     int* scan(bool print_info=false) {
-        // returns n int list whose first element denotes the number of devices found,
+        // returns an int list whose first element denotes the number of devices found,
         // and whose subsequent elements are the addresses
 
         int nDevices = 0;

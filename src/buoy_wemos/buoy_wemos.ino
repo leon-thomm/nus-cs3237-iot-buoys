@@ -6,21 +6,15 @@
 #include "temperature/temperature.h"
 #include "mpu/mpu.h"
 #include "wifi/wifi.h"
+#include "scheduler/scheduler.h"
+#include "mqtt/mqtt.h"
 
 #define MPU_ADDR 0x68
-#define ADC_ADDR 0x48   // hardwired
-#define FETCH_BASE_INT_MS 5000
+#define ADC_ADDR 0x48
 
 int adc_address;
-int last_fetch;
-
-void wait() {
-    int t = millis();
-    if(t - last_fetch < FETCH_BASE_INT_MS) {
-        delay(FETCH_BASE_INT_MS - (t - last_fetch));
-    }
-    last_fetch = millis();
-}
+int timestamp_offset;
+bool mqtt_enabled = false;
 
 void setup()
 {
@@ -28,10 +22,9 @@ void setup()
     while (!Serial) continue;
     delay(2000);
 
-    // I2C
-
+    // initialize I2C
     Wire.begin();
-    // scan: make sure we find both I2C devices
+    //   make sure we find both I2C devices
     Serial.println("scanning for I2C devices...");
     int* dev = i2c::scan(false);
     Serial.println("found the following devices:");
@@ -51,27 +44,45 @@ void setup()
     temperature::init(1);
     mpu::init(MPU_ADDR);
 
-    // wifi
-    wifi::init();
+    // initialize wifi
+    timestamp_offset = wifi::init();
+
+    // initialize scheduler
+    scheduler::init();
+
+    // initialize mqtt wakeup
+    if (mqtt_enabled) {
+        mqtt::wakeup::init(wifi::client, scheduler::set_intense);
+    }
+    
 }
 
 void loop()
 {
 
-    wait();
+    scheduler::wait();
+
+    // check mqtt
+    if (mqtt_enabled) {
+        mqtt::wakeup::loop();
+    }
+
+    if(!scheduler::intense) photores::turn_light_on();
 
     // read adc
     float brightness = photores::read();
     float heat = temperature::read();
 
     // read mpu
+    
     xyzFloat acc = mpu::getG();
     xyzFloat gyr = mpu::getGyr();
     float res_g = mpu::getResG();
 
     // generate json doc
+    
     StaticJsonDocument<200> doc;
-    doc["time"] = millis();
+    doc["time"] = millis() - timestamp_offset;
     doc["temp"] = heat;
     doc["light"] = brightness;
     JsonArray acc_doc = doc.createNestedArray("acc");
@@ -88,29 +99,8 @@ void loop()
 
     wifi::sendJSON(doc);
 
-    // print
+    scheduler::update(res_g, brightness);
 
-    // Serial.print("photores:\t\t");
-    // Serial.println(brightness);
-    // Serial.print("temperature:\t\t");
-    // Serial.print(heat);
-    // Serial.println();
+    if(!scheduler::intense) photores::turn_light_off();
 
-    // Serial.print("acc [g] x,y,z,g:\t\t");
-    // Serial.print(gValue.x);
-    // Serial.print("\t\t");
-    // Serial.print(gValue.y);
-    // Serial.print("\t\t");
-    // Serial.print(gValue.z);
-    // Serial.print("\t\t");
-    // Serial.println(resultantG);
-
-    // Serial.print("gyro [deg/s] x,y,z:\t\t");
-    // Serial.print(gyr.x);
-    // Serial.print("\t\t");
-    // Serial.print(gyr.y);
-    // Serial.print("\t\t");
-    // Serial.println(gyr.z);
-
-    delay(1000);
 }
