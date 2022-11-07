@@ -10,7 +10,7 @@
 #include "mqtt/mqtt.h"
 
 #define MPU_ADDR 0x68
-#define ADC_ADDR 0x48   // hardwired
+#define ADC_ADDR 0x48
 
 int adc_address;
 int timestamp_offset;

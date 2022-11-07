@@ -5,11 +5,11 @@
 
 namespace wifi {
 
-    const char* ssid = "iotbuoy"; //Your Wifi's SSID
-    const char* password = "abcd1234"; //Wifi Password
+    const char* ssid = "iotbuoy";
+    const char* password = "abcd1234";
 
     WiFiClient client;
-    IPAddress phone(192,168,43,1);      // leon
+    IPAddress phone(192,168,43,1);
     // IPAddress phone(192,168,250,244);
 
     bool sendString(char* buf) {
@@ -47,34 +47,6 @@ namespace wifi {
 
         sendString("reset");
         return millis();
-
-        // Serial.println("waiting for timestamp...");
-        // long timestamp = 0;
-        // char* buffer = (char*)calloc(sizeof(char), 20);
-        // int buffer_idx = 0;
-        // if (client.connect(phone, 4567)) {
-
-        //     while(client.read() == 255){}
-        //     while(true) {
-        //         delay(100);
-        //         char c = client.read();
-        //         Serial.print("received char: ");
-        //         Serial.write(c);
-        //         Serial.println((int)c);
-        //         if(c == 255) { break; }
-        //         buffer[buffer_idx++] = c;
-        //     }
-        //     Serial.print("received timestamp buffer: ");
-        //     Serial.println(buffer);
-        //     Serial.print("as string: ");
-        //     Serial.println(String(buffer));
-        //     Serial.println("converting to long: ");
-        //     timestamp = String(buffer).toInt();
-        //     Serial.print("received timestamp: ");
-        //     Serial.println(timestamp);
-        // }
-
-        // return timestamp;
     }
 
 }
