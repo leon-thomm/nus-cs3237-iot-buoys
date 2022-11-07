@@ -32,23 +32,29 @@ def build_model(name, trainX, trainY):
         model.save(name)
     return model
 
-## Read base data
-df = pd.read_csv("data1.csv", usecols=[0], engine="python")
-data_turbulence = df.values.astype('float32')
-## Scale data
-# scaler = MinMaxScaler()
-# data_turbulence = scaler.fit_transform(data_turbulence)
-## Create dataset
-trainX_turbulence, trainY_turbulence = create_dataset(data_turbulence, 10)
-trainX_turbulence = numpy.reshape(trainX_turbulence, (trainX_turbulence.shape[0], 1, trainX_turbulence.shape[1]))
-## Train
-model = build_model(MODEL_NAME, trainX_turbulence, trainY_turbulence)
+def load_dataset(idx, model_name):
+    ## Read base data
+    df = pd.read_csv("data1.csv", usecols=[idx], engine="python")
+    ds = df.values.astype('float32')
+    ## Scale data
+    scaler = StandardScaler()
+    ds = scaler.fit_transform(ds)
+    ## Create dataset
+    trainX_ds, trainY_ds = create_dataset(ds, 10)
+    trainX_ds = numpy.reshape(trainX_ds, (trainX_ds.shape[0], 1, trainX_ds.shape[1]))
+    ## Train
+    model = build_model(model_name, trainX_ds, trainY_ds)
+    return model
+
+model_turbulence = load_dataset(0, "lstm-turbulence.hd5")
+model_light = load_dataset(1, "lstm-light")
+model_temp = load_dataset(2, "lstm-temp")
 
 ## Predict
-pred_normal = [0.40, 0.41, 0.441, 0.392, 0.37, 0.38, 0.35, 0.38, 0.4, 0.3245]
-pred0 = model.predict([[pred_normal]])
-print(pred0)
+# pred_normal = [0.40, 0.41, 0.441, 0.392, 0.37, 0.38, 0.35, 0.38, 0.4, 0.3245]
+# pred0 = model.predict([[pred_normal]])
+# print(pred0)
 
-pred_bad = [0.90, 0.91, 0.941, 0.892, 0.97, 0.98, 0.95, 0.88, 0.9, 0.8245]
-pred1 = model.predict([[pred_bad]])
-print(pred1)
+# pred_bad = [0.90, 0.91, 0.941, 0.892, 0.97, 0.98, 0.95, 0.88, 0.9, 0.8245]
+# pred1 = model.predict([[pred_bad]])
+# print(pred1)
