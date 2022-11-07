@@ -50,11 +50,11 @@ model_turbulence = load_dataset(0, "lstm-turbulence.hd5")
 model_light = load_dataset(1, "lstm-light")
 model_temp = load_dataset(2, "lstm-temp")
 
-## Predict
-# pred_normal = [0.40, 0.41, 0.441, 0.392, 0.37, 0.38, 0.35, 0.38, 0.4, 0.3245]
-# pred0 = model.predict([[pred_normal]])
-# print(pred0)
+# Predict
+pred_normal = [0.40, 0.41, 0.441, 0.392, 0.37, 0.38, 0.35, 0.38, 0.4, 0.3245]
+pred0 = model_turbulence.predict([[pred_normal]])
+print(pred0)
 
-# pred_bad = [0.90, 0.91, 0.941, 0.892, 0.97, 0.98, 0.95, 0.88, 0.9, 0.8245]
-# pred1 = model.predict([[pred_bad]])
-# print(pred1)
+pred_bad = [0.90, 0.91, 0.941, 0.892, 0.97, 0.98, 0.95, 0.88, 0.9, 0.8245]
+pred1 = model_turbulence.predict([[pred_bad]])
+print(pred1)
