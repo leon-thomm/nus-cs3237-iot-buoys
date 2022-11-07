@@ -2,7 +2,7 @@
 
 namespace photores {
 
-    #define LED D1
+    #define LED D5
     
     int Brightness = 255;
     int adc_channel;
