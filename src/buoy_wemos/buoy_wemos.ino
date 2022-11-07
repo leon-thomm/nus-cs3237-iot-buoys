@@ -7,12 +7,14 @@
 #include "mpu/mpu.h"
 #include "wifi/wifi.h"
 #include "scheduler/scheduler.h"
+#include "mqtt/mqtt.h"
 
 #define MPU_ADDR 0x68
 #define ADC_ADDR 0x48   // hardwired
 
 int adc_address;
 int timestamp_offset;
+bool mqtt_enabled = false;
 
 void setup()
 {
@@ -47,12 +49,23 @@ void setup()
 
     // initialize scheduler
     scheduler::init();
+
+    // initialize mqtt wakeup
+    if (mqtt_enabled) {
+        mqtt::wakeup::init(wifi::client, scheduler::set_intense);
+    }
+    
 }
 
 void loop()
 {
 
     scheduler::wait();
+
+    // check mqtt
+    if (mqtt_enabled) {
+        mqtt::wakeup::loop();
+    }
 
     if(!scheduler::intense) photores::turn_light_on();
 
@@ -90,29 +103,4 @@ void loop()
 
     if(!scheduler::intense) photores::turn_light_off();
 
-    // print
-
-    // Serial.print("photores:\t\t");
-    // Serial.println(brightness);
-    // Serial.print("temperature:\t\t");
-    // Serial.print(heat);
-    // Serial.println();
-
-    // Serial.print("acc [g] x,y,z,g:\t\t");
-    // Serial.print(gValue.x);
-    // Serial.print("\t\t");
-    // Serial.print(gValue.y);
-    // Serial.print("\t\t");
-    // Serial.print(gValue.z);
-    // Serial.print("\t\t");
-    // Serial.println(resultantG);
-
-    // Serial.print("gyro [deg/s] x,y,z:\t\t");
-    // Serial.print(gyr.x);
-    // Serial.print("\t\t");
-    // Serial.print(gyr.y);
-    // Serial.print("\t\t");
-    // Serial.println(gyr.z);
-
-    // delay(1000);
 }

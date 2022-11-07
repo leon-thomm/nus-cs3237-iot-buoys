@@ -30,6 +30,7 @@ namespace wifi {
     }
 
     long init(){
+        WiFi.mode(WIFI_STA);    // possibly required for mqtt
         WiFi.begin(ssid, password);
 
         // Wait for connection
