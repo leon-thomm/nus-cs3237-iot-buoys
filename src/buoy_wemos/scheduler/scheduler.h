@@ -50,17 +50,17 @@ namespace scheduler {
     {
         intense = true;
         last_time_intense_detected = millis();
-        if (slot_switch_intense != nullptr) {
-            slot_switch_intense();
-        }
+        // if (slot_switch_intense != nullptr) {
+        //     slot_switch_intense();
+        // }
     }
 
     void set_chill()
     {
         intense = false;
-        if (slot_switch_chill != nullptr) {
-            slot_switch_chill();
-        }
+        // if (slot_switch_chill != nullptr) {
+        //     slot_switch_chill();
+        // }
     }
 
     void update(float g_force, float brightness)
