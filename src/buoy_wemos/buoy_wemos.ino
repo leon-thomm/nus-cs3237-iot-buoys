@@ -6,24 +6,26 @@
 #include "temperature/temperature.h"
 #include "mpu/mpu.h"
 #include "wifi/wifi.h"
-#include "scheduler/scheduler.h"
+// #include "scheduler/scheduler.h"
 
 #define MPU_ADDR 0x68
 #define ADC_ADDR 0x48   // hardwired
 
 int adc_address;
+int timestamp_offset;
 
-void setup() 
+void setup()
 {
     Serial.begin(9600);
     while (!Serial) continue;
     delay(2000);
 
-    // initiailze I2C
+    // I2C
+
     Wire.begin();
-    // make sure we find both devices
+    // scan: make sure we find both I2C devices
     Serial.println("scanning for I2C devices...");
-    int* dev = i2c::scan(true);
+    int* dev = i2c::scan(false);
     Serial.println("found the following devices:");
     for(int i=0; i<dev[0]; i++) {
         Serial.print("device ");
@@ -32,6 +34,7 @@ void setup()
         Serial.print(dev[i+1]);
         Serial.println();
     }
+
     while(dev[0] != 2){}
 
     // initialize sensor interfaces
@@ -40,17 +43,14 @@ void setup()
     temperature::init(1);
     mpu::init(MPU_ADDR);
 
-    // initialize wifi
-    wifi::init();
-
-    // initialize scheduler
-    scheduler::init();
+    // wifi
+    timestamp_offset = wifi::init();
 }
 
 void loop()
 {
 
-    // scheduler::wait();
+    //wait();
 
     // read adc
     float brightness = photores::read();
@@ -63,7 +63,7 @@ void loop()
 
     // generate json doc
     StaticJsonDocument<200> doc;
-    doc["time"] = millis();
+    doc["time"] = millis() - timestamp_offset;
     doc["temp"] = heat;
     doc["light"] = brightness;
     JsonArray acc_doc = doc.createNestedArray("acc");
@@ -75,14 +75,10 @@ void loop()
     gyr_doc.add(gyr.x);
     gyr_doc.add(gyr.y);
     gyr_doc.add(gyr.z);
-
-    // print to serial
     serializeJson(doc, Serial);
     Serial.println();
 
     wifi::sendJSON(doc);
-
-    // scheduler::update(res_g, brightness);
 
     // print
 
@@ -108,5 +104,5 @@ void loop()
     // Serial.print("\t\t");
     // Serial.println(gyr.z);
 
-    // delay(1000);
+    delay(1000);
 }
