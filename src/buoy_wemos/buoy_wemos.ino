@@ -6,7 +6,7 @@
 #include "temperature/temperature.h"
 #include "mpu/mpu.h"
 #include "wifi/wifi.h"
-// #include "scheduler/scheduler.h"
+#include "scheduler/scheduler.h"
 
 #define MPU_ADDR 0x68
 #define ADC_ADDR 0x48   // hardwired
@@ -45,12 +45,15 @@ void setup()
 
     // wifi
     timestamp_offset = wifi::init();
+
+    // scheduler
+    scheduler::init();
 }
 
 void loop()
 {
 
-    //wait();
+    scheduler::wait();
 
     // read adc
     float brightness = photores::read();
@@ -104,5 +107,5 @@ void loop()
     // Serial.print("\t\t");
     // Serial.println(gyr.z);
 
-    delay(1000);
+    // delay(1000);
 }
