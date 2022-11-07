@@ -65,7 +65,7 @@ namespace scheduler {
 
     void update(float g_force, float brightness)
     {
-        if (g_force > 1.3 || brightness > 0.7)                      { set_intense(); }
+        if (g_force > 1.03 || brightness > 0.7)                      { set_intense(); }
         else if (millis() - last_time_intense_detected > 10000)    { set_chill(); }
     }
 
