@@ -38,7 +38,7 @@ def nov04(f1):
             f1.write(values[10])
 
 def clean_temp0():
-    temp = round(random.uniform(29.0, 30.2), 8)
+    temp = round(random.uniform(29.1, 29.13), 8)
     return str(temp)
 
 def clean_light1(light):
