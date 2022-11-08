@@ -5,11 +5,13 @@
 
 namespace wifi {
 
+    // const char* ssid = "iotbuoy2";
     const char* ssid = "iotbuoy";
     const char* password = "abcd1234";
 
     WiFiClient client;
     IPAddress phone(192,168,43,1);
+    // IPAddress phone(192,168,234,15);
     // IPAddress phone(192,168,250,244);
 
     bool sendString(char* buf) {

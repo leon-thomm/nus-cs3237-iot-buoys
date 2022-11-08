@@ -27,7 +27,7 @@ namespace photores {
     {
         adc_channel = adc_ch;
         pinMode(LED, OUTPUT);
-        turn_light_on();
+        turn_light_off();
     }
 
 }

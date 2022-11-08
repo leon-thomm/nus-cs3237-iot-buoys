@@ -54,6 +54,9 @@ void setup()
     if (mqtt_enabled) {
         mqtt::wakeup::init(wifi::client, scheduler::set_intense);
     }
+
+    // turn on light to indicate successful setup
+    photores::turn_light_on();
     
 }
 
