@@ -61,7 +61,7 @@ def updates():
         result[key] = list(temp)
     return result
 
-@app.route("/mongo/lastTenAggregate")
+@app.route("/aggregate")
 def fetchLastTen():
     lastTen = {
         "time": deque([]),
@@ -70,13 +70,17 @@ def fetchLastTen():
         "turbulence": deque([])
     }
 
-    def scale_axis(data):
+    def scale_axis0(data):
         data = abs(float(data))
         return 1.0 if data > 1 else (data / 7)
+    
+    def scale_axis1(data):
+        data = abs(float(data) - 1)
+        return 1.0 if data > 1 else (data/7)
 
     def scale_degree(data):
         data = abs(float(data))
-        return 1.0 if data > 180 else (data / 1260.0)
+        return 1.0 if data > 360 else (data / 2520.0)
 
     res = db.abc.find().sort("time", -1).limit(10)
     for record in res:
@@ -84,10 +88,10 @@ def fetchLastTen():
         lastTen["temp"].appendleft(record.get("temp"))
         lastTen["light"].appendleft(record.get("light"))
 
-        acc_x = scale_axis(record.get("acc")[0])
-        acc_y = scale_axis(record.get("acc")[1])
-        acc_z = scale_axis(record.get("acc")[2])
-        acc_g = scale_axis(record.get("acc")[3])        
+        acc_x = scale_axis0(record.get("acc")[0])
+        acc_y = scale_axis0(record.get("acc")[1])
+        acc_z = scale_axis1(record.get("acc")[2])
+        acc_g = scale_axis1(record.get("acc")[3])        
         gyro_pitch = scale_degree(record.get("gyro")[0])
         gyro_yaw = scale_degree(record.get("gyro")[1])
         gyro_roll = scale_degree(record.get("gyro")[2])
@@ -102,9 +106,9 @@ def fetchLastTen():
     tempTen = lastTen["temp"]
     lightTen = lastTen["light"]
     turbulenceTen = lastTen["turbulence"]
-    print("10temps = ", tempTen)
-    print("10light = ", lightTen)
-    print("10turbu = ", turbulenceTen)
+    # print("10temps = ", tempTen)
+    # print("10light = ", lightTen)
+    # print("10turbu = ", turbulenceTen)
 
     predTemp = temp_model.predict([[tempTen]])
     predLight = light_model.predict([[lightTen]])

@@ -25,6 +25,25 @@
         </div>
       </div>
     </nav>
+
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <h1>Score</h1>
+          <p class="text-center" id="score" style="font-size: 5rem"></p>
+          <p>How to interpret this?</p>
+          <p>The score is an aggregation of deviation away from the measured baseline, the higher the deviation, the less suitable the conditions are</p>
+          <p id="deviation"></p>
+        </div>
+        <div class="col">
+          <h1>Buoy Location</h1>
+          <div id="map" style="height:400px"></div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3" crossorigin="anonymous"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyATGvLiUDv7Ky2wsXXK1GwNK15-HinD9ag&callback=initMap&v=weekly" defer></script>
+    <script src="/aggregate.js"></script>
   </body>
 </html>
