@@ -19,6 +19,9 @@
 \usepackage{eqlist}
 \usepackage{babel}
 \usepackage{multicol}
+\usepackage{stackengine}
+\usepackage{xcolor}
+\usepackage{listings}
 % BLOCKS
 \usepackage{beamerarticle}
 \usepackage[most]{tcolorbox}
@@ -72,6 +75,39 @@
     arc=0.5pt,
     title={#1},
 }
+%   CUSTOM CODE LISTINGS
+\newtcblisting{code}[2][]{
+	colback=blue!5!white,
+	colframe=red!75!black,
+	opacityframe=0.0,
+	coltitle=black,
+	left=5pt,
+	lefttitle=0pt,
+	enhanced,
+	listing only,
+	title=\textbf{#2},
+	arc=0.5pt,
+	listing engine=minted,
+	minted language={#1},
+	minted style=colorful,
+	minted options={
+		fontfamily=\sfdefault,%\sserif
+		fontsize=\scriptsize,
+		breaklines,
+		autogobble, %linenos, %numbersep=1mm,
+		tabsize=4,
+		escapeinside=||,mathescape=true,
+	},
+	overlay={
+		\begin{tcbclipinterior}
+			\fill[black!30!white] (frame.south west) 
+			rectangle ([xshift=1mm]frame.north west);
+		\end{tcbclipinterior}
+	},
+}
+
+% below command to set inline code style doesn't work    :(
+\lstset{language=C,keywordstyle={\bfseries \color{blue}}}
 
 % \usepackage{subfiles}
 % \subfile{}
@@ -93,9 +129,11 @@
 \renewcommand\thesection{\arabic{section}}
 \renewcommand\thesubsection{\thesection.\alph{subsection}}
 
+\newcommand\ISquaredC{$\text{I}^2\text{C}$}
+
 \section{Abstract}
 
-\textbf{Tino}
+\textbf{???}
 
 \section{Introduction}
 
@@ -103,21 +141,23 @@
 
 \section{Solution Approach}
 
-\textbf{Chuan Kai}
-
 \subsection{Architecture overview}
 
 \begin{multicols}{2}
 
-Physically, the system consists of two components: the \textit{cloud} and the \textit{buoy(s)}, whereas a buoy can be further divided into \textit{WeMOS} and \textit{Phone}. 
+Physically, the system consists of two components: the \textit{cloud} and the \textit{buoy(s)}, whereas a buoy can be further divided into \textit{WeMOS} and \textit{phone}. 
 
-The WeMOS collects most of the data of interest (temperature, movement, water turbidity). It then sends collected records to the phone via WiFi, which extends it and does some timestamp modification. The phone also serves as a gateway and forwards the records to the server running in the cloud.
+The WeMOS collects most of the data of interest (temperature, movement, water turbidity). It then sends collected records to the phone via WiFi, which extends it and does some timestamp modification.
 
-\includegraphics[width=8cm]{report/resources/architecture.png}
+The phone also serves as a gateway and forwards the records to the server running in the cloud.
+
+\includegraphics[width=9cm]{report/resources/architecture.png}
 
 \end{multicols}
 
 \subsection{Buoy Hardware}
+
+\begin{multicols}{2}
 
 The WeMOS collects most of the data. In particular, we collected
 
@@ -126,6 +166,14 @@ The WeMOS collects most of the data. In particular, we collected
     \item movement (accelerometer, gyroscope)
     \item water turbidity
 \end{itemize}
+
+For temperature, we used the tiny module from the set, sticking out of the buoy into the water. The water turbidity was implemented using an LED shining light through a section of water, and a photoresistor on the other side.
+
+Temperature sensor and photoresistor were connected to the ADC, and accelerometer data was supplied from the MPU. ADC and MPU are both communicating with the WeMOS over \ISquaredC.
+
+\includegraphics[width=9cm]{report/images/wiring.png}
+
+\end{multicols}
 
 \subsection{Phone applications}
 
@@ -155,11 +203,81 @@ The WeMOS collects most of the data. In particular, we collected
 
 \subsection{Power modes and sampling frequencies}
 
-\textbf{Leon}
+One of the most important bottlenecks is obviously power supply, because the buoy must run on battery. To increase lifetime, we had the following idea:
 
-\subsection{$\text{I}^2\text{C}$ Communication}
+\begin{multicols}{2}
 
-\textbf{Leon}
+\begin{_block}[]
+Employ two different power modes:
+\begin{enumerate}
+    \item \textbf{intense}: high frequency data collection ($f_H$)
+    \item \textbf{chill}: low frequency data collection ($f_L$)
+\end{enumerate}
+\end{_block}
+
+Mainly for simplicity- and demo-purposes we chose $f_H=1s$ and $f_L=10s$.
+
+Using different data collection intensity modes suggests employing different power modes of the WeMOS. Unfortunately, because the data transfer between WeMOS and phone is WiFi-based, for the above frequencies it was not feasable to put the WeMOS in \textit{light sleep mode} as this kills the WiFi connection, and connecting to the hotspot was not too reliable.
+
+Notice that \textit{deep sleep mode} is not useful because it puts the whole WeMOS to sleep, including \ISquaredC\ devices, and the MPU shouldn't be moving in order to calibrate.
+
+In real application one would probably significantly increase the delay in chill mode.
+
+\begin{code}[c]{WeMOS scheduler}
+<-snip->
+namespace scheduler {
+    int last_fetch;
+    bool intense = true;
+    int last_time_intense_detected = 0;
+    
+    void init() { <-snip-> }
+    void set_intense(){ <-snip-> }
+    void set_chill(){ <-snip-> }
+    int get_delay(){ <-snip-> }
+
+    // return delay time until next fetch
+    void wait() { <-snip-> }
+    
+    // update mode based on most recent measurements
+    // if amplitudes exceed threshold, wake up
+    void update(float g_force, float brightness){ <-snip-> }
+}
+\end{code}
+
+\end{multicols}
+
+\subsection{\ISquaredC\ Communication}
+
+\begin{multicols}{2}
+
+The communication between ADC, MPU, and WeMOS is based on \ISquaredC. We first tried to rely on well-engineered libraries for this, which didn't work out well initially - apparently there are subtle differences between the same components built by different manufacturers and we ran into tons of issues.
+
+This caused us to write the code for the ADC ourselves (based on the Lab and the provided spec sheet), which worked well initially. However, after a while we again couldn't initialize any devices, as register assignments to multiplex the analog ports seemed to switch randomly sometimes. We eventually managed to get it working using the \lstinline{ADS1115_WE} library.
+
+For the MPU we ended up using the \lstinline{MPU6500_WE} library, which is impressively feature-rich.
+
+The combination of MPU, ADC, and \ISquaredC\ made reading from the sensors mostly reliable and comparably easy to debug.
+
+\begin{code}[c]{ADC \ISquaredC}
+#include <ADS1115_WE.h>
+namespace adc {
+    <-snip->
+    float read(int channel) {
+        float voltage = 0.0;
+        ADS1115_MUX c;
+        switch (channel) {
+            case 0: c = ADS1115_COMP_0_GND; break;
+            <-snip->
+        }
+        _adc->setCompareChannels(c);
+        _adc->startSingleMeasurement();
+        while(_adc->isBusy()){}
+        return _adc->getResult_V() / 3.3;
+    }
+}
+\end{code}
+
+\end{multicols}
 
 \subsection{Buoy-Server}
 
