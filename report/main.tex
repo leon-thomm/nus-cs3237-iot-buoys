@@ -1,12 +1,188 @@
 \documentclass{article}
 
+% IMPORT PACKAGES
 \usepackage{graphicx}
 \graphicspath{{images/}}
+\usepackage{blindtext}
+\usepackage[T1]{fontenc}
+\usepackage[latin9]{inputenc}
+\usepackage[a4paper]{geometry}
+\geometry{verbose,tmargin=2cm,bmargin=2cm,lmargin=1cm,rmargin=1cm}
+\setlength{\parskip}{\smallskipamount}
+\setlength{\parindent}{0pt}
+\usepackage{array}
+\usepackage{mathtools}
+\usepackage{dsfont}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{lmodern}
+\usepackage{eqlist}
+\usepackage{babel}
+% BLOCKS
+\usepackage{beamerarticle}
+\usepackage[most]{tcolorbox}
+%	COMMON COLORS
+\definecolor{_light_green}{rgb}{0.36, 0.84, 0.36}
+\definecolor{_light_grey}{rgb}{0.90, 0.90, 0.90}
+\definecolor{_white}{rgb}{1.0, 1.0, 1.0}
+\definecolor{_blue}{rgb}{0.0, 0.0, 1.0}
+\definecolor{_light_blue}{rgb}{0.7, 0.9, 1.0}
+%	DEFINE BOXES
+\newtcolorbox{_block}[1][]{
+    colbacktitle=_light_grey,		% title background
+    coltitle=black,					% title color
+    titlerule=0pt,
+    colback=white!50!_light_grey,	% body background
+    boxrule=0.4pt,					% content-frame padding (or frame width)
+    colframe=black!20!_light_grey,	% frame color
+    left=0mm,						% content and title left padding
+    arc=0.5pt,						% border-radius
+    title={#1},
+}
+\newtcolorbox{_example}[1][]{
+    colbacktitle=_light_green,
+    coltitle=black,
+    titlerule=0pt,
+    colback=white!60!_light_green,
+    boxrule=0pt,
+    colframe=white,
+    left=0mm,
+    arc=0.5pt,
+    title={#1},
+}
+\newtcolorbox{_note}[1][]{
+    colbacktitle=_light_blue,
+    coltitle=black,
+    titlerule=0pt,
+    colback=white!60!_light_blue,
+    boxrule=0pt,
+    colframe=white,
+    left=0mm,
+    arc=0.5pt,
+    title={#1},
+}
+\newtcolorbox{_block_emph}[1][]{
+    enhanced,
+    frame hidden,
+    borderline west={2.0pt}{0pt}{blue!60!white},
+    opacityframe=0.0,
+    colback=blue!4!white,
+    left=2mm,
+    arc=0.5pt,
+    title={#1},
+}
+
+% \usepackage{subfiles}
+% \subfile{}
+
+
+
+
+% DOCUMENT
 
 \begin{document}
+
+% short title:
+%   \part*{}
+%   \part[]{}
+
+\bold{EXAMPLES, TESTING, DUMP SITE; DELETE LATER}
+
+blocks:
+
+\begin{_block}[$\sigma$-Algebra]
+
+$\mathcal{F}\subset\mathcal{P}(\Omega)$ is a \textbf{$\sigma$-Algebra}
+$\iff$
+
+P1: $\Omega\in\mathcal{F}$
+
+P2: ...
+
+\end{_block}
+
+notes:
+
+\begin{_note}[Properties]
+\begin{itemize}
+\item convenient computation for approximate lower bound of time of event occurrence $t\in\mathbb{R}$
+\[
+\mathbb{P}[X\geq t]=e^{-\lambda t}
+\]
+\end{itemize}
+\end{_note}
+
+without title:
+
+\begin{_note}[]
+
+$\forall i:A_{i}\in\mathcal{F}\implies\bigcap_{i=1}^{\infty}A_{i}\in\mathcal{F}$
+
+\end{_note}
+
+block\_emph:
+
+\begin{_block_emph}
+This is a test.
+\end{_block_emph}
 
 \title{CS3237 Introduction to Internet of Things \\ Group 4 Report}
 \author{Lai Yu Heem, Pinkl Constantin Maxime, Teo Chuan Kai, Wong Chee Hong, Thomm Leon Felix}
 \maketitle
+
+% changing sections enumeration style
+% styles: \arabic{} \alph{} \Alph{} \roman{} \Roman{}
+\renewcommand\thesection{\arabic{section}}
+\renewcommand\thesubsection{\thesection.\alph{subsection}}
+
+\section{Abstract}
+
+\section{Introduction}
+
+\section{Solution Approach}
+
+\subsection{Architecture overview}
+
+\subsection{Buoy Hardware}
+
+\subsection{Phone applications}
+
+\subsection{Server-side}
+
+\subsection{ML model and application}
+
+\subsection{Front-End}
+
+\section{Implementation Details}
+
+\subsection{Turbidity sensor}
+
+\subsection{Waterproofing}
+
+\subsection{Power modes and sampling frequencies}
+
+\subsection{$\text{I}^2\text{C}$ Communication}
+
+\subsection{Buoy-Server}
+
+\subsection{Data collection}
+
+\section{Experimental Evaluation}
+
+\subsection{Model accuracy}
+
+\subsection{Power consumption estimates}
+
+\section{Challenges and Outlook}
+
+\subsection{Phone reliance}
+
+\subsection{Data bottleneck}
+
+\subsection{Statistical methods}
+
+\subsection{Other use-cases}
+
+\subsection{...}
 
 \end{document}
