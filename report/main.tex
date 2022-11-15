@@ -18,6 +18,7 @@
 \usepackage{lmodern}
 \usepackage{eqlist}
 \usepackage{babel}
+\usepackage{multicol}
 % BLOCKS
 \usepackage{beamerarticle}
 \usepackage[most]{tcolorbox}
@@ -149,11 +150,17 @@ This is a test.
 
 \subsection{Architecture overview}
 
-\textbf{Chuan Kai}
+\begin{multicols}{2}
+
+Physically, the system consists of two components: the \textit{cloud} and the \textit{buoy(s)}, whereas a buoy can be further divided into \textit{WeMOS} and \textit{Phone}. 
+
+The WeMOS collects most of the data of interest (temperature, movement, water turbidity). It then sends collected records to the phone via WiFi, which extends it and does some timestamp modification. The phone also serves as a gateway and forwards the records to the server running in the cloud.
+
+\includegraphics[width=8cm]{report/resources/architecture.png}
+
+\end{multicols}
 
 \subsection{Buoy Hardware}
-
-\textbf{Leon}
 
 \subsection{Phone applications}
 
